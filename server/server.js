@@ -465,42 +465,85 @@ app.get('/api/crops/:id', async (req, res) => {
 
 app.post('/api/crops/recommend', async (req, res) => {
   try {
-    const { state, district, soilType, season } = req.body;
+    const { state = 'Madhya Pradesh', district, soilType, season = 'Rabi', acreage = 2.5 } = req.body;
+    const landAcreage = Math.max(0.5, Number(acreage) || 2.5);
 
-    const filter = {};
-    if (season) filter.season = season;
+    // State-specific crop profiles with authentic economic parameters
+    const economicsMap = {
+      'Lok-1 / Sharbati Wheat': { yieldPerAcre: 20, costPerAcre: 14500, defaultMsp: 2425, defaultMarket: 2950 },
+      'JG-11 Chana (Desi Gram)': { yieldPerAcre: 10.5, costPerAcre: 12000, defaultMsp: 5650, defaultMarket: 6450 },
+      'Pusa Bold Mustard': { yieldPerAcre: 9, costPerAcre: 11000, defaultMsp: 5950, defaultMarket: 6350 },
+      'Linseed (Alsi - T-397)': { yieldPerAcre: 6, costPerAcre: 8500, defaultMsp: 5650, defaultMarket: 6200 },
+      'HQPM-1 Rabi Maize': { yieldPerAcre: 28, costPerAcre: 14000, defaultMsp: 2225, defaultMarket: 2550 },
+      'Toria / Yellow Sarson': { yieldPerAcre: 7, costPerAcre: 9500, defaultMsp: 5950, defaultMarket: 6400 },
+      'Kufri Pukhraj Potato': { yieldPerAcre: 110, costPerAcre: 38000, defaultMsp: 1250, defaultMarket: 1650 },
+      'Field Pea (Arkel / Azad)': { yieldPerAcre: 35, costPerAcre: 16000, defaultMsp: 4200, defaultMarket: 5200 },
+      'HD-2967 / DBW-187 Wheat': { yieldPerAcre: 22, costPerAcre: 15000, defaultMsp: 2425, defaultMarket: 2650 },
+      'Lentil (Masoor - KLS-218)': { yieldPerAcre: 8, costPerAcre: 11500, defaultMsp: 6700, defaultMarket: 7200 },
+    };
+
+    // Regional query
+    const filter = { season: 'Rabi' }; // October is strictly Rabi sowing
     if (state) filter.states = { $in: [state] };
-    if (soilType) filter.soilTypes = { $regex: soilType, $options: 'i' };
 
-    let crops = await Crop.find(filter).limit(5);
+    let crops = await Crop.find(filter);
 
-    if (crops.length === 0 && season) {
-      crops = await Crop.find({ season }).limit(5);
-    }
+    // Fallback if specific state has no seeded crops
     if (crops.length === 0) {
-      crops = await Crop.find({}).limit(5);
+      crops = await Crop.find({ season: 'Rabi' });
     }
 
-    const recommendations = crops.map(crop => ({
-      _id: crop._id,
-      name: crop.name,
-      localName: crop.localName,
-      season: crop.season,
-      duration: crop.duration,
-      mspPrice: crop.mspPrice,
-      marketPrice: crop.marketPrice,
-      profitMargin: crop.profitMargin,
-      avgYield: crop.avgYield,
-      waterRequirement: crop.waterRequirement,
-      soilTypes: crop.soilTypes,
-      description: crop.description,
-      tags: crop.tags,
-      estimatedRevenue: `₹${(crop.marketPrice * 22).toLocaleString('en-IN')}/hectare (approx)`,
-    }));
+    const recommendations = crops.map(crop => {
+      const eco = economicsMap[crop.name] || {
+        yieldPerAcre: 15,
+        costPerAcre: 13000,
+        defaultMsp: crop.mspPrice || 2400,
+        defaultMarket: crop.marketPrice || 2800,
+      };
+
+      const mspPrice = crop.mspPrice || eco.defaultMsp;
+      const marketPrice = crop.marketPrice || eco.defaultMarket;
+
+      const totalYield = Math.round(eco.yieldPerAcre * landAcreage);
+      const cultivationCost = Math.round(eco.costPerAcre * landAcreage);
+      const grossRevenue = Math.round(totalYield * marketPrice);
+      const netProfit = Math.max(0, grossRevenue - cultivationCost);
+      const profitMarginPct = Math.round((netProfit / grossRevenue) * 100);
+
+      return {
+        _id: crop._id,
+        name: crop.name,
+        localName: crop.localName,
+        season: crop.season,
+        duration: crop.duration,
+        mspPrice,
+        marketPrice,
+        profitMargin: `${profitMarginPct}%`,
+        profitMarginPct,
+        avgYield: `${eco.yieldPerAcre} quintals/acre`,
+        waterRequirement: crop.waterRequirement,
+        soilTypes: crop.soilTypes,
+        description: crop.description,
+        tags: crop.tags,
+        landAcreage,
+        economics: {
+          yieldPerAcre: eco.yieldPerAcre,
+          totalYieldQuintals: totalYield,
+          costPerAcre: eco.costPerAcre,
+          totalCultivationCost: cultivationCost,
+          grossRevenue,
+          netProfit,
+        },
+        estimatedRevenue: `₹${netProfit.toLocaleString('en-IN')} net profit on ${landAcreage} acres`,
+      };
+    });
+
+    // Sort by highest net profit
+    recommendations.sort((a, b) => b.economics.netProfit - a.economics.netProfit);
 
     res.json({
       success: true,
-      query: { state, district, soilType, season },
+      query: { state, district, soilType, season, acreage: landAcreage },
       count: recommendations.length,
       data: recommendations,
     });

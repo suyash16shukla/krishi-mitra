@@ -14,12 +14,12 @@ export const weatherEmoji = (code) => {
 
 // Get task icon config based on type
 export const taskTypeConfig = {
-  irrigation: { icon: '💧', color: 'bg-blue-100 text-blue-700', borderColor: 'border-blue-300', label: 'Pani Dena' },
-  fertilizer: { icon: '🌿', color: 'bg-green-100 text-green-700', borderColor: 'border-green-300', label: 'Khad Dalna' },
-  pesticide: { icon: '🛡️', color: 'bg-yellow-100 text-yellow-700', borderColor: 'border-yellow-300', label: 'Kaida' },
-  harvest: { icon: '🌾', color: 'bg-amber-100 text-amber-700', borderColor: 'border-amber-300', label: 'Katai' },
-  sowing: { icon: '🌱', color: 'bg-emerald-100 text-emerald-700', borderColor: 'border-emerald-300', label: 'Buwai' },
-  monitoring: { icon: '🔍', color: 'bg-purple-100 text-purple-700', borderColor: 'border-purple-300', label: 'Nirikshan' },
+  irrigation: { icon: '💧', color: 'bg-blue-100 text-blue-700', borderColor: 'border-blue-300', label: 'Pani Dena (सिंचाई)' },
+  fertilizer: { icon: '🌿', color: 'bg-green-100 text-green-700', borderColor: 'border-green-300', label: 'Khad Dalna (खाद)' },
+  pesticide: { icon: '🛡️', color: 'bg-yellow-100 text-yellow-700', borderColor: 'border-yellow-300', label: 'Keetnashak (दवा)' },
+  harvest: { icon: '🌾', color: 'bg-amber-100 text-amber-700', borderColor: 'border-amber-300', label: 'Katai (कटाई)' },
+  sowing: { icon: '🌱', color: 'bg-emerald-100 text-emerald-700', borderColor: 'border-emerald-300', label: 'Buwai & Upchar (बुवाई)' },
+  monitoring: { icon: '🔍', color: 'bg-purple-100 text-purple-700', borderColor: 'border-purple-300', label: 'Nirikshan (निरीक्षण)' },
 };
 
 // Scheme category config
@@ -39,18 +39,42 @@ export const seasonColors = {
   Zaid: 'bg-yellow-100 text-yellow-800',
 };
 
-// Indian states list
+// Indian states list focusing on priority Agri regions
 export const indianStates = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
-  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
-  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
-  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
+  'Madhya Pradesh', 'Jharkhand', 'Uttar Pradesh', 'Rajasthan', 'Bihar',
+  'Punjab', 'Haryana', 'Maharashtra', 'Gujarat', 'Chhattisgarh'
 ];
 
+// Cascading state districts
+export const STATE_DISTRICTS = {
+  'Madhya Pradesh': [
+    'Bhopal', 'Sehore', 'Raisen', 'Vidisha', 'Hoshangabad (Narmadapuram)',
+    'Ujjain', 'Indore', 'Dewas', 'Sagar', 'Jabalpur'
+  ],
+  'Jharkhand': [
+    'Ranchi', 'Hazaribagh', 'Dhanbad', 'Bokaro', 'Ramgarh',
+    'Dumka', 'Deoghar', 'East Singhbhum (Jamshedpur)'
+  ],
+  'Uttar Pradesh': [
+    'Varanasi', 'Lucknow', 'Kanpur', 'Prayagraj', 'Gorakhpur',
+    'Meerut', 'Agra', 'Aligarh'
+  ],
+  'Rajasthan': ['Jaipur', 'Kota', 'Alwar', 'Sri Ganganagar'],
+  'Bihar': ['Patna', 'Gaya', 'Muzaffarpur', 'Bhagalpur'],
+};
+
+// Default soil types per state
+export const STATE_DEFAULT_SOILS = {
+  'Madhya Pradesh': 'Black Cotton Soil',
+  'Jharkhand': 'Red Sandy Soil',
+  'Uttar Pradesh': 'Alluvial',
+  'Rajasthan': 'Sandy Loam',
+  'Bihar': 'Loamy',
+};
+
 export const soilTypes = [
-  'Alluvial', 'Black Cotton Soil', 'Clay', 'Clay Loam', 'Loamy',
-  'Red Soil', 'Sandy', 'Sandy Loam', 'Silty Clay', 'Well-drained',
+  'Black Cotton Soil', 'Alluvial', 'Red Sandy Soil', 'Loamy',
+  'Clay Loam', 'Heavy Loam', 'Acidic Loam', 'Sandy Loam'
 ];
 
 // Format currency
