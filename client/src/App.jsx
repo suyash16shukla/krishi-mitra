@@ -40,7 +40,7 @@ function AlertBanner({ language = 'hinglish' }) {
 }
 
 // ── Home Page ─────────────────────────────────────────────────────────────────
-function HomePage({ onTabChange, farmer = null, onOpenRegister, onLocationDetected, detectedLocation = null, language = 'hinglish' }) {
+function HomePage({ onTabChange, farmer = null, onOpenRegister, onLocationDetected, onLocationChange, detectedLocation = null, language = 'hinglish' }) {
   const t = getTranslation(language);
   const statsT = t.stats;
   const actionsT = t.quickActions;
@@ -110,12 +110,17 @@ function HomePage({ onTabChange, farmer = null, onOpenRegister, onLocationDetect
       </div>
 
       {/* Live Weather Card with Real-Time HTML5 High-Accuracy GPS Detection */}
-      <WeatherCard onLocationDetected={onLocationDetected} language={language} />
+      <WeatherCard
+        onLocationChange={onLocationChange || onLocationDetected}
+        onLocationDetected={onLocationDetected || onLocationChange}
+        selectedLocation={detectedLocation?.locationName || (detectedLocation?.city ? `${detectedLocation.city}, ${detectedLocation.state}` : null)}
+        language={language}
+      />
 
       {/* Auto Location-Based Soil & Crop Recommendation Card (Kaggle Calibrated) */}
       <SoilCropRecommendationCard
         detectedLocation={detectedLocation}
-        onLocationChange={onLocationDetected}
+        onLocationChange={onLocationChange || onLocationDetected}
         language={language}
       />
 
@@ -361,6 +366,7 @@ export default function App() {
             farmer={farmer}
             onOpenRegister={() => setFarmerModalOpen(true)}
             onLocationDetected={handleLocationDetected}
+            onLocationChange={handleLocationDetected}
             detectedLocation={detectedLocation}
             language={language}
           />
@@ -370,7 +376,12 @@ export default function App() {
       case 'weather':
         return (
           <div className="space-y-5 animate-fade-in">
-            <WeatherCard onLocationDetected={handleLocationDetected} language={language} />
+            <WeatherCard
+              onLocationChange={handleLocationDetected}
+              onLocationDetected={handleLocationDetected}
+              selectedLocation={detectedLocation?.locationName || (detectedLocation?.city ? `${detectedLocation.city}, ${detectedLocation.state}` : null)}
+              language={language}
+            />
             <div className="card p-5 shadow-2xs">
               <h3 className="section-title mb-4">🌾 Weather Impact & Preventive Farm Protocol</h3>
               <div className="space-y-3">

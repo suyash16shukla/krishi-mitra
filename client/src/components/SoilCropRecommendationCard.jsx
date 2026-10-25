@@ -11,7 +11,7 @@ export default function SoilCropRecommendationCard({
   onLocationChange = null,
   language = 'hinglish',
 }) {
-  const [district, setDistrict] = useState(detectedLocation?.district || 'Lucknow');
+  const [district, setDistrict] = useState(detectedLocation?.district || detectedLocation?.city || 'Lucknow');
   const [state, setState] = useState(detectedLocation?.state || 'Uttar Pradesh');
   const [pinCode, setPinCode] = useState(detectedLocation?.pinCode || '');
   const [isManualSelectOpen, setIsManualSelectOpen] = useState(false);
@@ -19,11 +19,27 @@ export default function SoilCropRecommendationCard({
   const [loading, setLoading] = useState(true);
   const [activeSeason, setActiveSeason] = useState('rabi');
 
-  // Sync with detected location from HTML5 GPS
+  // Sync with detected location from HTML5 GPS or dropdown selection
   useEffect(() => {
     if (detectedLocation) {
-      if (detectedLocation.district) setDistrict(detectedLocation.district);
-      if (detectedLocation.state) setState(detectedLocation.state);
+      const d = detectedLocation.district || detectedLocation.city;
+      if (d) setDistrict(d);
+      if (detectedLocation.state) {
+        const stateMap = {
+          'MP': 'Madhya Pradesh',
+          'UP': 'Uttar Pradesh',
+          'JH': 'Jharkhand',
+          'BR': 'Bihar',
+          'RJ': 'Rajasthan',
+          'PB': 'Punjab',
+          'HR': 'Haryana',
+          'MH': 'Maharashtra',
+          'GJ': 'Gujarat',
+          'CG': 'Chhattisgarh',
+        };
+        const resolvedState = stateMap[detectedLocation.state] || detectedLocation.state;
+        setState(resolvedState);
+      }
       if (detectedLocation.pinCode) setPinCode(detectedLocation.pinCode);
     }
   }, [detectedLocation]);

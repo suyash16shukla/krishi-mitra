@@ -5,18 +5,19 @@ import { weatherEmoji } from '../utils/helpers';
 import { getTranslation } from '../utils/translations';
 
 const POPULAR_LOCATIONS = [
-  { name: 'Lucknow, UP', lat: 26.8467, lon: 80.9462 },
-  { name: 'Varanasi, UP', lat: 25.3176, lon: 82.9739 },
-  { name: 'Kanpur, UP', lat: 26.4499, lon: 80.3319 },
-  { name: 'Patna, Bihar', lat: 25.5941, lon: 85.1376 },
-  { name: 'Bhopal, MP', lat: 23.2599, lon: 77.4126 },
-  { name: 'Indore, MP', lat: 22.7196, lon: 75.8577 },
-  { name: 'Ludhiana, Punjab', lat: 30.9010, lon: 75.8573 },
-  { name: 'Karnal, Haryana', lat: 29.6857, lon: 76.9905 },
-  { name: 'Jaipur, Rajasthan', lat: 26.9124, lon: 75.7873 },
-  { name: 'Pune, Maharashtra', lat: 18.5204, lon: 73.8567 },
-  { name: 'Hyderabad, Telangana', lat: 17.3850, lon: 78.4867 },
-  { name: 'Delhi NCR', lat: 28.6139, lon: 77.2090 },
+  { name: 'Lucknow, UP', city: 'Lucknow', state: 'Uttar Pradesh', lat: 26.8467, lon: 80.9462 },
+  { name: 'Bhopal, MP', city: 'Bhopal', state: 'Madhya Pradesh', lat: 23.2599, lon: 77.4126 },
+  { name: 'Indore, MP', city: 'Indore', state: 'Madhya Pradesh', lat: 22.7196, lon: 75.8577 },
+  { name: 'Patna, Bihar', city: 'Patna', state: 'Bihar', lat: 25.5941, lon: 85.1376 },
+  { name: 'Ranchi, Jharkhand', city: 'Ranchi', state: 'Jharkhand', lat: 23.3441, lon: 85.3096 },
+  { name: 'Varanasi, UP', city: 'Varanasi', state: 'Uttar Pradesh', lat: 25.3176, lon: 82.9739 },
+  { name: 'Kanpur, UP', city: 'Kanpur', state: 'Uttar Pradesh', lat: 26.4499, lon: 80.3319 },
+  { name: 'Ludhiana, Punjab', city: 'Ludhiana', state: 'Punjab', lat: 30.9010, lon: 75.8573 },
+  { name: 'Karnal, Haryana', city: 'Karnal', state: 'Haryana', lat: 29.6857, lon: 76.9905 },
+  { name: 'Jaipur, Rajasthan', city: 'Jaipur', state: 'Rajasthan', lat: 26.9124, lon: 75.7873 },
+  { name: 'Pune, Maharashtra', city: 'Pune', state: 'Maharashtra', lat: 18.5204, lon: 73.8567 },
+  { name: 'Hyderabad, Telangana', city: 'Hyderabad', state: 'Telangana', lat: 17.3850, lon: 78.4867 },
+  { name: 'Delhi NCR', city: 'Delhi', state: 'Delhi', lat: 28.6139, lon: 77.2090 },
 ];
 
 function WeatherIcon({ code, size = 'large' }) {
@@ -54,16 +55,35 @@ function ForecastDay({ day }) {
   );
 }
 
-export default function WeatherCard({ onLocationDetected = null, language = 'hinglish' }) {
+export default function WeatherCard({
+  onLocationChange = null,
+  onLocationDetected = null,
+  selectedLocation: propSelectedLocation = null,
+  language = 'hinglish'
+}) {
   const t = getTranslation(language).weather;
 
+  const [selectedLocation, setSelectedLocation] = useState(
+    propSelectedLocation || 'Lucknow, UP'
+  );
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [isUsingGPS, setIsUsingGPS] = useState(false);
-  const [currentCoords, setCurrentCoords] = useState({ lat: 26.8467, lon: 80.9462, name: 'Lucknow, UP' });
+  const [currentCoords, setCurrentCoords] = useState({ lat: 26.8467, lon: 80.9462, name: propSelectedLocation || 'Lucknow, UP' });
   const [lastUpdated, setLastUpdated] = useState(null);
+
+  // Sync external selectedLocation prop if provided
+  useEffect(() => {
+    if (propSelectedLocation && propSelectedLocation !== selectedLocation) {
+      setSelectedLocation(propSelectedLocation);
+      const match = POPULAR_LOCATIONS.find(l => l.name === propSelectedLocation);
+      if (match) {
+        setCurrentCoords({ lat: match.lat, lon: match.lon, name: match.name });
+      }
+    }
+  }, [propSelectedLocation]);
 
   // Fetch weather using coordinates
   const fetchWeatherForCoords = useCallback(async (lat, lon, label = '') => {
@@ -71,6 +91,9 @@ export default function WeatherCard({ onLocationDetected = null, language = 'hin
     setError(null);
     try {
       const { data } = await weatherAPI.get(lat, lon, label);
+      if (data && label) {
+        data.location = label;
+      }
       setWeather(data);
       setLastUpdated(new Date());
     } catch (err) {
@@ -100,127 +123,125 @@ export default function WeatherCard({ onLocationDetected = null, language = 'hin
   }, []);
 
   // Detect GPS Location using HTML5 Geolocation API with high accuracy
-  const handleDetectGPS = useCallback(() => {
+  const detectGPSLocation = useCallback((showAlertOnError = false) => {
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser. Please select district manually.');
+      const msg = 'Geolocation is not supported by your browser. Please select district manually.';
+      setError(msg);
+      if (showAlertOnError) alert(msg);
       return;
     }
 
     setDetectingLocation(true);
     setError(null);
+
     navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        let locationName = 'Detected Location';
-        let geoDetails = null;
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        console.log("GPS coordinates received:", latitude, longitude);
 
         try {
-          const { data } = await weatherAPI.reverseGeocode(latitude, longitude);
-          if (data && data.formatted) {
-            locationName = data.formatted;
-            geoDetails = data;
-          }
-        } catch {
-          locationName = `Farm (${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°)`;
-        }
+          // Fetch city via Open-Meteo reverse geocoding or BigDataCloud
+          const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+          const data = await res.json();
 
-        const newLocation = { lat: latitude, lon: longitude, name: locationName };
-        setCurrentCoords(newLocation);
-        setIsUsingGPS(true);
-        setDetectingLocation(false);
+          const detectedCity = data.city || data.locality || data.principalSubdivision || "Bhopal";
+          const detectedState = data.principalSubdivision || "MP";
+          const locationString = `${detectedCity}, ${detectedState}`;
 
-        // Fetch weather for new location
-        fetchWeatherForCoords(latitude, longitude, locationName);
+          // Immediately set the state and trigger weather + soil update
+          setSelectedLocation(locationString);
+          setCurrentCoords({ lat: latitude, lon: longitude, name: locationString });
+          setIsUsingGPS(true);
+          setDetectingLocation(false);
 
-        // Notify parent app with exact district, state, pin code and coordinates
-        if (onLocationDetected) {
-          onLocationDetected({
+          fetchWeatherForCoords(latitude, longitude, locationString);
+
+          const locPayload = {
+            city: detectedCity,
+            district: detectedCity,
+            state: detectedState,
+            lat: latitude,
+            lon: longitude,
             latitude,
             longitude,
-            locationName,
-            city: geoDetails?.city || '',
-            district: geoDetails?.district || '',
-            state: geoDetails?.state || '',
-            pinCode: geoDetails?.pinCode || '',
+            locationName: locationString,
             isGPS: true,
-          });
+          };
+
+          if (onLocationChange) onLocationChange(locPayload);
+          if (onLocationDetected) onLocationDetected(locPayload);
+        } catch (err) {
+          console.error("Reverse geocoding failed, using coordinates directly:", err);
+          const fallbackString = `Farm (${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°)`;
+          setSelectedLocation(fallbackString);
+          setCurrentCoords({ lat: latitude, lon: longitude, name: fallbackString });
+          setIsUsingGPS(true);
+          setDetectingLocation(false);
+
+          fetchWeatherForCoords(latitude, longitude, fallbackString);
+
+          const locPayload = {
+            city: 'Bhopal',
+            district: 'Bhopal',
+            state: 'MP',
+            lat: latitude,
+            lon: longitude,
+            latitude,
+            longitude,
+            locationName: fallbackString,
+            isGPS: true,
+          };
+
+          if (onLocationChange) onLocationChange(locPayload);
+          if (onLocationDetected) onLocationDetected(locPayload);
         }
       },
-      (geoErr) => {
-        console.warn('Geolocation error / permission denied:', geoErr.message);
+      (error) => {
+        console.error("Geolocation error:", error);
         setDetectingLocation(false);
-        setError('GPS permission denied. Please select your state & district manually below.');
+        setError('GPS permission denied or unavailable. Please select your location manually.');
+        if (showAlertOnError) {
+          alert("GPS detection error: " + error.message);
+        }
         // Fallback to initial coords
         fetchWeatherForCoords(currentCoords.lat, currentCoords.lon, currentCoords.name);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
-  }, [fetchWeatherForCoords, currentCoords, onLocationDetected]);
+  }, [fetchWeatherForCoords, currentCoords, onLocationChange, onLocationDetected]);
 
   // Initial load: Attempt HTML5 GPS auto-detection with high accuracy
   useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const { latitude, longitude } = pos.coords;
-          let locationName = '';
-          let geoData = null;
-          try {
-            const { data } = await weatherAPI.reverseGeocode(latitude, longitude);
-            if (data?.formatted) {
-              locationName = data.formatted;
-              geoData = data;
-              if (onLocationDetected) {
-                onLocationDetected({
-                  latitude,
-                  longitude,
-                  locationName,
-                  city: data.city || '',
-                  district: data.district || '',
-                  state: data.state || '',
-                  pinCode: data.pinCode || '',
-                  isGPS: true,
-                });
-              }
-            }
-          } catch {
-            locationName = 'Live Farm GPS';
-          }
-
-          setCurrentCoords({ lat: latitude, lon: longitude, name: locationName || 'Live Farm GPS' });
-          setIsUsingGPS(true);
-          fetchWeatherForCoords(latitude, longitude, locationName || 'Live Farm GPS');
-        },
-        () => {
-          // If denied, load default coordinates with notice
-          fetchWeatherForCoords(currentCoords.lat, currentCoords.lon, currentCoords.name);
-        },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
-      );
-    } else {
-      fetchWeatherForCoords(currentCoords.lat, currentCoords.lon, currentCoords.name);
-    }
+    detectGPSLocation(false);
   }, []);
 
+  const handleDetectGPS = () => {
+    detectGPSLocation(true);
+  };
+
   const handleSelectLocation = (e) => {
-    const loc = POPULAR_LOCATIONS.find(l => l.name === e.target.value);
+    const locName = e.target.value;
+    const loc = POPULAR_LOCATIONS.find(l => l.name === locName);
     if (loc) {
-      setCurrentCoords(loc);
+      setSelectedLocation(loc.name);
+      setCurrentCoords({ lat: loc.lat, lon: loc.lon, name: loc.name });
       setIsUsingGPS(false);
       fetchWeatherForCoords(loc.lat, loc.lon, loc.name);
 
-      const parts = loc.name.split(', ');
-      if (onLocationDetected) {
-        onLocationDetected({
-          latitude: loc.lat,
-          longitude: loc.lon,
-          locationName: loc.name,
-          district: parts[0] || '',
-          state: parts[1] === 'UP' ? 'Uttar Pradesh' : parts[1] === 'MP' ? 'Madhya Pradesh' : parts[1] || '',
-          pinCode: '',
-          isGPS: false,
-        });
-      }
+      const locPayload = {
+        city: loc.city,
+        district: loc.city,
+        state: loc.state,
+        lat: loc.lat,
+        lon: loc.lon,
+        latitude: loc.lat,
+        longitude: loc.lon,
+        locationName: loc.name,
+        isGPS: false,
+      };
+
+      if (onLocationChange) onLocationChange(locPayload);
+      if (onLocationDetected) onLocationDetected(locPayload);
     }
   };
 
@@ -243,7 +264,7 @@ export default function WeatherCard({ onLocationDetected = null, language = 'hin
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-md rounded-xl text-xs font-semibold">
               <MapPin size={13} className="text-emerald-200 flex-shrink-0" />
-              <span className="max-w-[200px] truncate">{weather?.location || currentCoords.name}</span>
+              <span className="max-w-[200px] truncate">{selectedLocation || weather?.location || currentCoords.name}</span>
               {isUsingGPS && (
                 <span className="badge bg-emerald-400 text-emerald-950 text-[9px] font-bold px-1.5 py-0.2">
                   GPS
@@ -253,11 +274,16 @@ export default function WeatherCard({ onLocationDetected = null, language = 'hin
 
             {/* Quick dropdown for hubs */}
             <select
-              value={currentCoords.name}
+              value={selectedLocation}
               onChange={handleSelectLocation}
               className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs rounded-xl px-2.5 py-1.5 outline-none cursor-pointer"
             >
               <option value="" disabled className="text-gray-900">Change Agri Hub</option>
+              {!POPULAR_LOCATIONS.some(l => l.name === selectedLocation) && (
+                <option value={selectedLocation} className="text-gray-900">
+                  📍 {selectedLocation}
+                </option>
+              )}
               {POPULAR_LOCATIONS.map(loc => (
                 <option key={loc.name} value={loc.name} className="text-gray-900">
                   {loc.name}
