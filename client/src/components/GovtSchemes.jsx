@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, ExternalLink, ChevronDown, Filter, BookOpen } from 'lucide-react';
 import { schemesAPI } from '../utils/api';
 import { schemeCategoryConfig } from '../utils/helpers';
+import mockSchemesData from '../data/mockSchemes.json';
 
 function SchemeCard({ scheme }) {
   const [expanded, setExpanded] = useState(false);
@@ -124,10 +125,17 @@ export default function GovtSchemes() {
     const fetchSchemes = async () => {
       try {
         const { data } = await schemesAPI.getAll();
-        setSchemes(data.data || []);
-        setFiltered(data.data || []);
-      } catch {
-        setError('Failed to load schemes. Check server connection.');
+        if (data && data.data && data.data.length > 0) {
+          setSchemes(data.data);
+          setFiltered(data.data);
+        } else {
+          setSchemes(mockSchemesData);
+          setFiltered(mockSchemesData);
+        }
+      } catch (err) {
+        console.warn('Backend schemes request failed/timed out, loading verified offline schemes fallback:', err.message);
+        setSchemes(mockSchemesData);
+        setFiltered(mockSchemesData);
       } finally {
         setLoading(false);
       }

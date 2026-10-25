@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { MobileNav, DesktopSidebar } from './components/Navigation';
 import WeatherCard from './components/WeatherCard';
+import SoilCropRecommendationCard from './components/SoilCropRecommendationCard';
 import SoilMetricsCard from './components/SoilMetricsCard';
 import CropAdvisor from './components/CropAdvisor';
 import CropTimeline from './components/CropTimeline';
@@ -39,7 +40,7 @@ function AlertBanner({ language = 'hinglish' }) {
 }
 
 // ── Home Page ─────────────────────────────────────────────────────────────────
-function HomePage({ onTabChange, farmer = null, onOpenRegister, onLocationDetected, language = 'hinglish' }) {
+function HomePage({ onTabChange, farmer = null, onOpenRegister, onLocationDetected, detectedLocation = null, language = 'hinglish' }) {
   const t = getTranslation(language);
   const statsT = t.stats;
   const actionsT = t.quickActions;
@@ -65,7 +66,7 @@ function HomePage({ onTabChange, farmer = null, onOpenRegister, onLocationDetect
             <div>
               <p className="text-xs text-emerald-100">Welcome Back,</p>
               <h3 className="text-sm font-bold">{farmer.name}</h3>
-              <p className="text-[11px] text-emerald-200">{farmer.acreage} Acres • {farmer.district}, {farmer.state}</p>
+              <p className="text-[11px] text-emerald-200">{farmer.acreage || farmer.landSizeAcres} Acres • {farmer.district}, {farmer.state}</p>
             </div>
           </div>
           <button
@@ -108,8 +109,15 @@ function HomePage({ onTabChange, farmer = null, onOpenRegister, onLocationDetect
         ))}
       </div>
 
-      {/* Live Weather Card with Real-Time GPS Detection */}
+      {/* Live Weather Card with Real-Time HTML5 High-Accuracy GPS Detection */}
       <WeatherCard onLocationDetected={onLocationDetected} language={language} />
+
+      {/* Auto Location-Based Soil & Crop Recommendation Card (Kaggle Calibrated) */}
+      <SoilCropRecommendationCard
+        detectedLocation={detectedLocation}
+        onLocationChange={onLocationDetected}
+        language={language}
+      />
 
       {/* Soil Metrics & Diagnostics */}
       <SoilMetricsCard language={language} />
@@ -353,6 +361,7 @@ export default function App() {
             farmer={farmer}
             onOpenRegister={() => setFarmerModalOpen(true)}
             onLocationDetected={handleLocationDetected}
+            detectedLocation={detectedLocation}
             language={language}
           />
         );
@@ -404,6 +413,7 @@ export default function App() {
             farmer={farmer}
             onOpenRegister={() => setFarmerModalOpen(true)}
             onLocationDetected={handleLocationDetected}
+            detectedLocation={detectedLocation}
             language={language}
           />
         );

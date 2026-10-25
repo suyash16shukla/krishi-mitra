@@ -4,7 +4,7 @@ const Crop = require('./models/Crop');
 const CropSchedule = require('./models/CropSchedule');
 const GovtScheme = require('./models/GovtScheme');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/krishimitra';
+const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/krishimitra';
 
 const cropsData = [
   // ─── Madhya Pradesh (Malwa / Bhopal / Sehore / Black Soil) ───────────────────

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -30,19 +30,23 @@ export const schemesAPI = {
 };
 
 export const soilAPI = {
+  recommend: (district, state) =>
+    api.get('/soil/recommend', { params: { district, state } }),
   getMetrics: () => api.get('/soil/metrics'),
 };
 
 export const farmerAPI = {
-  save: (data) => api.post('/farmers', data),
-  getProfile: (phone) => api.get('/farmers/profile', { params: phone ? { phone } : {} }),
+  register: (data) => api.post('/farmers/register', data),
+  save: (data) => api.post('/farmers/register', data),
+  getProfile: (mobile) =>
+    api.get('/farmers/profile', { params: mobile ? { mobile, phone: mobile } : {} }),
   getById: (id) => api.get(`/farmers/${id}`),
   getAdvisory: (data) => api.post('/farmers/advisory', data),
 };
 
 export const aiAPI = {
   chat: (message, language, conversationHistory) =>
-    api.post('/ai/advisor', { message, language, conversationHistory }),
+    api.post('/chat/advisor', { message, language, conversationHistory }),
 };
 
 export default api;

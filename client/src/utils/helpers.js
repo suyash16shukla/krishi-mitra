@@ -39,28 +39,55 @@ export const seasonColors = {
   Zaid: 'bg-yellow-100 text-yellow-800',
 };
 
-// Indian states list focusing on priority Agri regions
+// Comprehensive Indian agricultural states list
 export const indianStates = [
-  'Madhya Pradesh', 'Jharkhand', 'Uttar Pradesh', 'Rajasthan', 'Bihar',
+  'Uttar Pradesh', 'Madhya Pradesh', 'Jharkhand', 'Bihar', 'Rajasthan',
   'Punjab', 'Haryana', 'Maharashtra', 'Gujarat', 'Chhattisgarh'
 ];
 
-// Cascading state districts
+// Cascading state districts mapping
 export const STATE_DISTRICTS = {
+  'Uttar Pradesh': [
+    'Lucknow', 'Varanasi', 'Kanpur', 'Prayagraj', 'Gorakhpur',
+    'Meerut', 'Agra', 'Aligarh', 'Bareilly', 'Moradabad',
+    'Ayodhya', 'Jhansi', 'Muzaffarnagar', 'Mathura', 'Mirzapur'
+  ],
   'Madhya Pradesh': [
-    'Bhopal', 'Sehore', 'Raisen', 'Vidisha', 'Hoshangabad (Narmadapuram)',
-    'Ujjain', 'Indore', 'Dewas', 'Sagar', 'Jabalpur'
+    'Bhopal', 'Sehore', 'Indore', 'Ujjain', 'Dewas',
+    'Raisen', 'Vidisha', 'Sagar', 'Jabalpur', 'Hoshangabad (Narmadapuram)',
+    'Gwalior', 'Khargone', 'Satna', 'Rewa', 'Ratlam'
   ],
   'Jharkhand': [
     'Ranchi', 'Hazaribagh', 'Dhanbad', 'Bokaro', 'Ramgarh',
-    'Dumka', 'Deoghar', 'East Singhbhum (Jamshedpur)'
+    'Dumka', 'Deoghar', 'East Singhbhum (Jamshedpur)', 'Palamu', 'Giridih'
   ],
-  'Uttar Pradesh': [
-    'Varanasi', 'Lucknow', 'Kanpur', 'Prayagraj', 'Gorakhpur',
-    'Meerut', 'Agra', 'Aligarh'
+  'Bihar': [
+    'Patna', 'Gaya', 'Muzaffarpur', 'Bhagalpur', 'Darbhanga',
+    'Purnia', 'Rohtas', 'Nalanda', 'Begusarai', 'Samastipur'
   ],
-  'Rajasthan': ['Jaipur', 'Kota', 'Alwar', 'Sri Ganganagar'],
-  'Bihar': ['Patna', 'Gaya', 'Muzaffarpur', 'Bhagalpur'],
+  'Rajasthan': [
+    'Jaipur', 'Kota', 'Alwar', 'Sri Ganganagar', 'Jodhpur',
+    'Bikaner', 'Udaipur', 'Bharatpur', 'Hanumangarh', 'Sikar'
+  ],
+  'Punjab': [
+    'Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda',
+    'Firozpur', 'Sangrur', 'Hoshiarpur', 'Fazilka'
+  ],
+  'Haryana': [
+    'Karnal', 'Ambala', 'Hisar', 'Rohtak', 'Sirsa',
+    'Kurukshetra', 'Sonipat', 'Fatehabad', 'Panipat'
+  ],
+  'Maharashtra': [
+    'Pune', 'Nashik', 'Nagpur', 'Aurangabad (Chhatrapati Sambhaji Nagar)',
+    'Kolhapur', 'Solapur', 'Ahmednagar', 'Amravati', 'Latur', 'Jalgaon'
+  ],
+  'Gujarat': [
+    'Ahmedabad', 'Surat', 'Rajkot', 'Vadodara', 'Mehsana',
+    'Junagadh', 'Anand', 'Bhavnagar', 'Banaskantha'
+  ],
+  'Chhattisgarh': [
+    'Raipur', 'Bilaspur', 'Durg', 'Rajnandgaon', 'Janjgir-Champa', 'Bastar'
+  ]
 };
 
 // Default soil types per state

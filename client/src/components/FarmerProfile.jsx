@@ -16,12 +16,12 @@ export function FarmerModal({ isOpen, onClose, onSave, initialData = null, detec
 
   const [form, setForm] = useState({
     name: '',
-    phone: '',
+    mobile: '',
     state: 'Uttar Pradesh',
     district: '',
-    acreage: '2.5',
+    landSizeAcres: '2.5',
     crops: ['Wheat', 'Mustard'],
-    soilType: 'Loamy',
+    soilType: 'Alluvial',
     irrigationType: 'Tubewell / Borewell',
   });
 
@@ -32,12 +32,12 @@ export function FarmerModal({ isOpen, onClose, onSave, initialData = null, detec
     if (initialData) {
       setForm({
         name: initialData.name || '',
-        phone: initialData.phone || '',
+        mobile: initialData.mobile || initialData.phone || '',
         state: initialData.state || 'Uttar Pradesh',
         district: initialData.district || '',
-        acreage: String(initialData.acreage || '2.5'),
+        landSizeAcres: String(initialData.landSizeAcres || initialData.acreage || '2.5'),
         crops: initialData.crops?.length ? initialData.crops : ['Wheat', 'Mustard'],
-        soilType: initialData.soilType || 'Loamy',
+        soilType: initialData.soilType || 'Alluvial',
         irrigationType: initialData.irrigationType || 'Tubewell / Borewell',
       });
     } else if (detectedLocation) {
@@ -67,46 +67,63 @@ export function FarmerModal({ isOpen, onClose, onSave, initialData = null, detec
     e.preventDefault();
     setError(null);
 
+    const cleanMobile = form.mobile.trim().replace(/\D/g, '');
+
     if (!form.name.trim()) {
-      setError('Please enter farmer name.');
+      setError('Please enter farmer name (किसान का नाम भरें).');
       return;
     }
-    if (!form.phone.trim() || form.phone.trim().length < 10) {
-      setError('Please enter a valid 10-digit mobile number.');
+    if (!cleanMobile || cleanMobile.length < 10) {
+      setError('Please enter a valid 10-digit mobile number (10 अंकों का मोबाइल नंबर).');
       return;
     }
     if (!form.district.trim()) {
-      setError('Please enter your district name.');
+      setError('Please enter your district name (जिला भरें).');
       return;
     }
-    if (!form.acreage || Number(form.acreage) <= 0) {
-      setError('Please enter valid land acreage.');
+    if (!form.landSizeAcres || Number(form.landSizeAcres) <= 0) {
+      setError('Please enter valid land acreage (भूमि का आकार एकड़ में).');
       return;
     }
 
     setSaving(true);
     try {
       const payload = {
-        ...form,
-        acreage: Number(form.acreage),
+        name: form.name.trim(),
+        mobile: cleanMobile,
+        phone: cleanMobile,
+        state: form.state.trim(),
+        district: form.district.trim(),
+        landSizeAcres: Number(form.landSizeAcres),
+        acreage: Number(form.landSizeAcres),
+        soilType: form.soilType.trim(),
+        crops: form.crops,
+        irrigationType: form.irrigationType,
+        pinCode: detectedLocation?.pinCode || '',
         preferredLanguage: language,
       };
 
-      // Save to server
+      // Save directly to MongoDB Atlas via POST /api/farmers/register
       let savedData = payload;
       try {
-        const { data } = await farmerAPI.save(payload);
+        const { data } = await farmerAPI.register(payload);
         if (data.data) savedData = data.data;
+        if (data.token) {
+          localStorage.setItem('krishi_farmer_token', data.token);
+        }
+        if (data.farmerId) {
+          localStorage.setItem('krishi_farmer_id', data.farmerId);
+        }
       } catch (err) {
-        console.warn('Backend farmer save failed, preserving in local state:', err.message);
+        console.warn('Backend farmer save note, persisting in client session:', err.message);
       }
 
-      // Save to localStorage
+      // Save profile to localStorage for instant personalized dashboard
       localStorage.setItem('krishi_farmer_profile', JSON.stringify(savedData));
       onSave(savedData);
       onClose();
     } catch (err) {
-      setError(err.message || 'Failed to save profile. Try again.');
+      setError(err.message || 'Failed to register farmer profile. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -177,8 +194,8 @@ export function FarmerModal({ isOpen, onClose, onSave, initialData = null, detec
                   required
                   maxLength={10}
                   placeholder={t.phonePlaceholder}
-                  value={form.phone}
-                  onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })}
+                  value={form.mobile}
+                  onChange={e => setForm({ ...form, mobile: e.target.value.replace(/\D/g, '') })}
                   className="input-field pl-9 text-sm"
                 />
               </div>
@@ -222,7 +239,7 @@ export function FarmerModal({ isOpen, onClose, onSave, initialData = null, detec
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">
-                {t.acreage} <span className="text-red-500">*</span>
+                {t.acreage} (Acres) <span className="text-red-500">*</span>
               </label>
               <div className="relative">
                 <Layers size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -232,8 +249,8 @@ export function FarmerModal({ isOpen, onClose, onSave, initialData = null, detec
                   min="0.1"
                   required
                   placeholder={t.acreagePlaceholder}
-                  value={form.acreage}
-                  onChange={e => setForm({ ...form, acreage: e.target.value })}
+                  value={form.landSizeAcres}
+                  onChange={e => setForm({ ...form, landSizeAcres: e.target.value })}
                   className="input-field pl-9 text-sm"
                 />
               </div>

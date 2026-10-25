@@ -99,14 +99,15 @@ export default function WeatherCard({ onLocationDetected = null, language = 'hin
     }
   }, []);
 
-  // Detect GPS Location
+  // Detect GPS Location using HTML5 Geolocation API with high accuracy
   const handleDetectGPS = useCallback(() => {
     if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser.');
+      setError('Geolocation is not supported by your browser. Please select district manually.');
       return;
     }
 
     setDetectingLocation(true);
+    setError(null);
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude, longitude } = pos.coords;
@@ -131,7 +132,7 @@ export default function WeatherCard({ onLocationDetected = null, language = 'hin
         // Fetch weather for new location
         fetchWeatherForCoords(latitude, longitude, locationName);
 
-        // Notify parent app
+        // Notify parent app with exact district, state, pin code and coordinates
         if (onLocationDetected) {
           onLocationDetected({
             latitude,
@@ -140,30 +141,35 @@ export default function WeatherCard({ onLocationDetected = null, language = 'hin
             city: geoDetails?.city || '',
             district: geoDetails?.district || '',
             state: geoDetails?.state || '',
+            pinCode: geoDetails?.pinCode || '',
+            isGPS: true,
           });
         }
       },
       (geoErr) => {
-        console.warn('Geolocation error:', geoErr.message);
+        console.warn('Geolocation error / permission denied:', geoErr.message);
         setDetectingLocation(false);
+        setError('GPS permission denied. Please select your state & district manually below.');
         // Fallback to initial coords
         fetchWeatherForCoords(currentCoords.lat, currentCoords.lon, currentCoords.name);
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   }, [fetchWeatherForCoords, currentCoords, onLocationDetected]);
 
-  // Initial load: Attempt GPS auto-detection
+  // Initial load: Attempt HTML5 GPS auto-detection with high accuracy
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
           const { latitude, longitude } = pos.coords;
           let locationName = '';
+          let geoData = null;
           try {
             const { data } = await weatherAPI.reverseGeocode(latitude, longitude);
             if (data?.formatted) {
               locationName = data.formatted;
+              geoData = data;
               if (onLocationDetected) {
                 onLocationDetected({
                   latitude,
@@ -172,6 +178,8 @@ export default function WeatherCard({ onLocationDetected = null, language = 'hin
                   city: data.city || '',
                   district: data.district || '',
                   state: data.state || '',
+                  pinCode: data.pinCode || '',
+                  isGPS: true,
                 });
               }
             }
@@ -179,15 +187,15 @@ export default function WeatherCard({ onLocationDetected = null, language = 'hin
             locationName = 'Live Farm GPS';
           }
 
-          setCurrentCoords({ lat: latitude, lon: longitude, name: locationName });
+          setCurrentCoords({ lat: latitude, lon: longitude, name: locationName || 'Live Farm GPS' });
           setIsUsingGPS(true);
-          fetchWeatherForCoords(latitude, longitude, locationName);
+          fetchWeatherForCoords(latitude, longitude, locationName || 'Live Farm GPS');
         },
         () => {
-          // If denied, load default Lucknow coords
+          // If denied, load default coordinates with notice
           fetchWeatherForCoords(currentCoords.lat, currentCoords.lon, currentCoords.name);
         },
-        { enableHighAccuracy: false, timeout: 5000 }
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
       );
     } else {
       fetchWeatherForCoords(currentCoords.lat, currentCoords.lon, currentCoords.name);
@@ -200,6 +208,19 @@ export default function WeatherCard({ onLocationDetected = null, language = 'hin
       setCurrentCoords(loc);
       setIsUsingGPS(false);
       fetchWeatherForCoords(loc.lat, loc.lon, loc.name);
+
+      const parts = loc.name.split(', ');
+      if (onLocationDetected) {
+        onLocationDetected({
+          latitude: loc.lat,
+          longitude: loc.lon,
+          locationName: loc.name,
+          district: parts[0] || '',
+          state: parts[1] === 'UP' ? 'Uttar Pradesh' : parts[1] === 'MP' ? 'Madhya Pradesh' : parts[1] || '',
+          pinCode: '',
+          isGPS: false,
+        });
+      }
     }
   };
 

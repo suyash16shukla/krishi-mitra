@@ -1,0 +1,635 @@
+require('dotenv').config();
+const mongoose = require('mongoose');
+const SoilData = require('./models/SoilData');
+
+const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/krishimitra';
+
+const soilDataset = [
+  // ─── UTTAR PRADESH: Alluvial & Loamy (Indo-Gangetic Basin) ──────────────────
+  {
+    district: 'Lucknow',
+    state: 'Uttar Pradesh',
+    soilType: 'Alluvial',
+    ph: { min: 6.8, max: 7.8, avg: 7.3, classification: 'Neutral to Mildly Alkaline' },
+    nitrogen: { min: 190, max: 280, avg: 235, unit: 'kg/ha', status: 'Medium' },
+    phosphorus: { min: 14, max: 32, avg: 22, unit: 'kg/ha', status: 'Medium' },
+    potassium: { min: 180, max: 340, avg: 260, unit: 'kg/ha', status: 'High' },
+    organicCarbon: { value: 0.62, unit: '%', status: 'Medium' },
+    moisturePercent: { avg: 42, status: 'Good' },
+    recommendedCrops: [
+      {
+        name: 'HD-2967 / DBW-187 Wheat',
+        localName: 'गेहूँ (एचडी-2967)',
+        suitabilityScore: 96,
+        season: 'Rabi',
+        expectedYield: '22-25 q/acre',
+        profitability: 'High (MSP ₹2,425/q)',
+        waterRequirement: '4-5 irrigations (CRI, Tillering, Booting, Milking)',
+        fertilizerDosage: '120 kg N : 60 kg P2O5 : 40 kg K2O per hectare',
+        keyAdvantages: ['High tillering', 'Resistant to stripe rust', 'High hectolitre grain weight'],
+      },
+      {
+        name: 'Pusa Bold Mustard',
+        localName: 'सरसों (पूसा बोल्ड)',
+        suitabilityScore: 92,
+        season: 'Rabi',
+        expectedYield: '9-11 q/acre',
+        profitability: 'Very High (Market ₹6,350/q)',
+        waterRequirement: '2 irrigations (Flowering & Pod filling)',
+        fertilizerDosage: '80 kg N : 40 kg P : 40 kg K + 20 kg Sulphur/ha',
+        keyAdvantages: ['High oil recovery (41%)', 'Low water demand', 'Excellent cash returns'],
+      },
+      {
+        name: 'Kufri Pukhraj Potato',
+        localName: 'सब्जी आलू (पुखराज)',
+        suitabilityScore: 90,
+        season: 'Rabi',
+        expectedYield: '100-130 q/acre',
+        profitability: 'High cash crop',
+        waterRequirement: '5-6 light irrigations',
+        fertilizerDosage: '150 kg N : 80 kg P : 100 kg K/ha',
+        keyAdvantages: ['Bulks fast in 75-80 days', 'Thrives in loose alluvial soil'],
+      },
+      {
+        name: 'Basmati Paddy (PB-1509)',
+        localName: 'धान (बासमती-1509)',
+        suitabilityScore: 94,
+        season: 'Kharif',
+        expectedYield: '20-24 q/acre',
+        profitability: 'High export value',
+        waterRequirement: 'Submerged condition during vegetative phase',
+        fertilizerDosage: '100 kg N : 50 kg P : 40 kg K + 10 kg Zinc/ha',
+        keyAdvantages: ['Short duration (120 days)', 'Premium mill price'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'Perform CRI stage irrigation at 21 days for Wheat. Apply 20 kg Zinc Sulphate with basal DAP to counter alluvial zinc deficiency.',
+      kharif: 'Prepare puddle beds carefully and transplant 25-day-old paddy seedlings. Maintain 3-5 cm standing water.',
+      zaid: 'Sow green gram (Moong - Pusa Vishal) or Cucurbits (cucumber, pumpkin) to utilize post-harvest field moisture and fix nitrogen.',
+    },
+    soilHealthTips: [
+      'Alluvial soils in Lucknow are rich in potassium but deficient in organic carbon and zinc.',
+      'Incorporate 4-5 tonnes of FYM (Farm Yard Manure) or green manure (Dhaincha) every 2 years.',
+      'Apply split urea doses rather than single heavy broadcasting to prevent leaching.',
+    ],
+  },
+  {
+    district: 'Varanasi',
+    state: 'Uttar Pradesh',
+    soilType: 'Alluvial',
+    ph: { min: 6.9, max: 7.7, avg: 7.2, classification: 'Optimal' },
+    nitrogen: { min: 185, max: 270, avg: 220, unit: 'kg/ha', status: 'Medium' },
+    phosphorus: { min: 18, max: 38, avg: 26, unit: 'kg/ha', status: 'Medium' },
+    potassium: { min: 200, max: 350, avg: 275, unit: 'kg/ha', status: 'High' },
+    organicCarbon: { value: 0.65, unit: '%', status: 'Medium' },
+    moisturePercent: { avg: 44, status: 'Adequate' },
+    recommendedCrops: [
+      {
+        name: 'HD-3086 Wheat',
+        localName: 'गेहूँ (HD-3086)',
+        suitabilityScore: 95,
+        season: 'Rabi',
+        expectedYield: '21-24 q/acre',
+        profitability: 'High',
+        waterRequirement: '4-5 irrigations',
+        fertilizerDosage: '120 kg N : 60 kg P : 40 kg K/ha',
+        keyAdvantages: ['Heat stress tolerant', 'Resistant to lodging and rust'],
+      },
+      {
+        name: 'Vegetable Pea (Azad P-1)',
+        localName: 'हरी मटर',
+        suitabilityScore: 93,
+        season: 'Rabi',
+        expectedYield: '35-45 q/acre (green pods)',
+        profitability: 'High early cash returns',
+        waterRequirement: '2-3 light irrigations',
+        fertilizerDosage: '20 kg N : 60 kg P : 40 kg K/ha',
+        keyAdvantages: ['Fast returns (65 days)', 'Enriches soil with atmospheric nitrogen'],
+      },
+      {
+        name: 'Lentil (Masoor - KLS-218)',
+        localName: 'मसूर दाल',
+        suitabilityScore: 91,
+        season: 'Rabi',
+        expectedYield: '7-9 q/acre',
+        profitability: 'High (MSP ₹6,700/q)',
+        waterRequirement: '1-2 life-saving irrigations',
+        fertilizerDosage: '20 kg N : 40 kg P/ha',
+        keyAdvantages: ['Drought resilient', 'High market price'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'Take advantage of Gangetic silt residual moisture. Sow pulses or early vegetable peas before deep winter.',
+      kharif: 'Direct-Seeded Rice (DSR) or transplanted paddy with biofertilizers (Azospirillum).',
+      zaid: 'Summer Moong or Cowpea (Lobia) for both green fodder and pod harvest.',
+    },
+    soilHealthTips: [
+      'Soil texture is ideal for vegetable and cereal rotation.',
+      'Maintain surface mulch to curb soil moisture evaporation during dry spells.',
+    ],
+  },
+  {
+    district: 'Kanpur',
+    state: 'Uttar Pradesh',
+    soilType: 'Alluvial',
+    ph: { min: 7.1, max: 8.0, avg: 7.5, classification: 'Mildly Alkaline' },
+    nitrogen: { min: 180, max: 260, avg: 215, unit: 'kg/ha', status: 'Medium' },
+    phosphorus: { min: 16, max: 34, avg: 24, unit: 'kg/ha', status: 'Medium' },
+    potassium: { min: 190, max: 320, avg: 245, unit: 'kg/ha', status: 'High' },
+    organicCarbon: { value: 0.58, unit: '%', status: 'Low to Medium' },
+    moisturePercent: { avg: 38, status: 'Adequate' },
+    recommendedCrops: [
+      {
+        name: 'Wheat (PBW-502 / DBW-187)',
+        localName: 'गेहूँ',
+        suitabilityScore: 94,
+        season: 'Rabi',
+        expectedYield: '20-23 q/acre',
+        profitability: 'High',
+        waterRequirement: '4 irrigations',
+        fertilizerDosage: '120:60:40 NPK',
+        keyAdvantages: ['High protein', 'Wide commercial acceptability'],
+      },
+      {
+        name: 'Mustard (Varuna T-59)',
+        localName: 'सरसों (वरुणा)',
+        suitabilityScore: 93,
+        season: 'Rabi',
+        expectedYield: '8-10 q/acre',
+        profitability: 'High',
+        waterRequirement: '2 irrigations',
+        fertilizerDosage: '80:40:40 NPK + 20 kg Sulphur',
+        keyAdvantages: ['Drought tolerant', 'High seed yield'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'Apply Gypsum (200-250 kg/ha) if electrical conductivity or salinity shows upward trend.',
+      kharif: 'Paddy or Pearl Millet (Bajra) in upland patches with proper drainage.',
+      zaid: 'Fodder Maize or Zaid Moong for quick field turnaround.',
+    },
+    soilHealthTips: [
+      'Alkaline patches require organic compost and green manuring.',
+      'Use phosphorus-solubilizing bacteria (PSB) to unlock fixed phosphate.',
+    ],
+  },
+
+  // ─── MADHYA PRADESH: Black Cotton Soil (Vertisols / Malwa Plateau) ─────────
+  {
+    district: 'Bhopal',
+    state: 'Madhya Pradesh',
+    soilType: 'Black Cotton Soil',
+    ph: { min: 7.2, max: 8.2, avg: 7.6, classification: 'Moderately Alkaline' },
+    nitrogen: { min: 170, max: 250, avg: 205, unit: 'kg/ha', status: 'Medium' },
+    phosphorus: { min: 12, max: 28, avg: 20, unit: 'kg/ha', status: 'Low' },
+    potassium: { min: 240, max: 420, avg: 330, unit: 'kg/ha', status: 'Very High' },
+    organicCarbon: { value: 0.55, unit: '%', status: 'Medium' },
+    moisturePercent: { avg: 52, status: 'High Retention' },
+    recommendedCrops: [
+      {
+        name: 'Lok-1 / Sharbati Wheat',
+        localName: 'शरबती गेहूँ (MP Special)',
+        suitabilityScore: 98,
+        season: 'Rabi',
+        expectedYield: '18-22 q/acre',
+        profitability: 'Very High (Fetches ₹2,950/q premium in Mandis)',
+        waterRequirement: '3-4 light irrigations (Moisture retained in black soil)',
+        fertilizerDosage: '100 kg N : 50 kg P : 30 kg K/ha',
+        keyAdvantages: ['Lustrous golden grain', 'Premium chapati taste', 'High market price'],
+      },
+      {
+        name: 'JG-11 Desi Gram (Chana)',
+        localName: 'देसी चना (JG-11)',
+        suitabilityScore: 97,
+        season: 'Rabi',
+        expectedYield: '10-12 q/acre',
+        profitability: 'High (MSP ₹5,650/q)',
+        waterRequirement: '1-2 life-saving irrigations only',
+        fertilizerDosage: '20 kg N : 50 kg P + Rhizobium culture',
+        keyAdvantages: ['Wilt resistant', 'High branching on nipping', 'Very low water consumption'],
+      },
+      {
+        name: 'JS-9560 Soybean',
+        localName: 'सोयाबीन (JS-9560)',
+        suitabilityScore: 95,
+        season: 'Kharif',
+        expectedYield: '10-13 q/acre',
+        profitability: 'High (Major cash crop of Malwa)',
+        waterRequirement: 'Rainfed with broad-bed furrow drainage',
+        fertilizerDosage: '25 kg N : 60 kg P : 40 kg K/ha',
+        keyAdvantages: ['Short duration (85-90 days)', 'Ideal for crop rotation with Sharbati wheat'],
+      },
+      {
+        name: 'Linseed (Alsi - T-397)',
+        localName: 'अलसी (Alsi)',
+        suitabilityScore: 90,
+        season: 'Rabi',
+        expectedYield: '6-8 q/acre',
+        profitability: 'High medicinal & export value (₹6,200/q)',
+        waterRequirement: '1 irrigation or residual moisture',
+        fertilizerDosage: '40 kg N : 20 kg P/ha',
+        keyAdvantages: ['Omega-3 rich', 'Thrives in black clay crack fissures'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'Do not over-irrigate black cotton soil as heavy clay causes waterlogging and root rot. Follow wapsa (field capacity) principle.',
+      kharif: 'Prepare Ridge and Furrow system for Soybean sowing to avoid seedling mortality during torrential July-August rains.',
+      zaid: 'Summer Sesame (Til) or Green Gram if assured tubewell water is accessible.',
+    },
+    soilHealthTips: [
+      'Black soil has tremendous montmorillonite clay content that retains moisture for weeks.',
+      'Phosphorus is frequently locked due to high pH; use single superphosphate (SSP) which adds necessary Sulphur.',
+      'Avoid heavy tractor movement immediately after watering to prevent severe soil compaction.',
+    ],
+  },
+  {
+    district: 'Sehore',
+    state: 'Madhya Pradesh',
+    soilType: 'Black Cotton Soil',
+    ph: { min: 7.3, max: 8.3, avg: 7.7, classification: 'Mildly Alkaline' },
+    nitrogen: { min: 165, max: 245, avg: 200, unit: 'kg/ha', status: 'Medium' },
+    phosphorus: { min: 10, max: 26, avg: 18, unit: 'kg/ha', status: 'Low' },
+    potassium: { min: 250, max: 440, avg: 340, unit: 'kg/ha', status: 'Very High' },
+    organicCarbon: { value: 0.52, unit: '%', status: 'Medium' },
+    moisturePercent: { avg: 50, status: 'High Retention' },
+    recommendedCrops: [
+      {
+        name: 'C-306 / Sharbati Wheat',
+        localName: 'सीहोर शरबती गेहूँ (GI Tagged)',
+        suitabilityScore: 99,
+        season: 'Rabi',
+        expectedYield: '17-21 q/acre',
+        profitability: 'Premium export grade (₹3,200/q)',
+        waterRequirement: '2-3 light irrigations',
+        fertilizerDosage: '80:40:20 NPK with bio-compost',
+        keyAdvantages: ['Sweet tasting flour', 'Unmatched export demand', 'Deep root structure'],
+      },
+      {
+        name: 'JG-16 Dollar / Kabuli Chana',
+        localName: 'काबुली / डॉलर चना',
+        suitabilityScore: 95,
+        season: 'Rabi',
+        expectedYield: '9-11 q/acre',
+        profitability: 'Very High (Mandi rate ₹9,000-11,000/q)',
+        waterRequirement: '2 irrigations',
+        fertilizerDosage: '20 kg N : 60 kg P + Trichoderma seed treatment',
+        keyAdvantages: ['Large seed size', 'High commercial export value'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'Sehore Sharbati wheat requires calm morning temperatures and careful irrigation only at crown root initiation and grain milk stage.',
+      kharif: 'Soybean (NRC-127) or Maize with seed treatment to prevent collar rot in clay.',
+      zaid: 'Crop residue incorporation and deep summer ploughing to expose hibernating soil pests to sun.',
+    },
+    soilHealthTips: [
+      'Black soil develops deep cracks in summer that naturally aerate deeper soil horizons.',
+      'Apply 100 kg/acre Gypsum every 3 seasons to improve permeability.',
+    ],
+  },
+  {
+    district: 'Indore',
+    state: 'Madhya Pradesh',
+    soilType: 'Black Cotton Soil',
+    ph: { min: 7.2, max: 8.1, avg: 7.5, classification: 'Neutral to Mildly Alkaline' },
+    nitrogen: { min: 180, max: 260, avg: 215, unit: 'kg/ha', status: 'Medium' },
+    phosphorus: { min: 14, max: 30, avg: 22, unit: 'kg/ha', status: 'Medium' },
+    potassium: { min: 260, max: 410, avg: 335, unit: 'kg/ha', status: 'High' },
+    organicCarbon: { value: 0.58, unit: '%', status: 'Medium' },
+    moisturePercent: { avg: 48, status: 'High' },
+    recommendedCrops: [
+      {
+        name: 'Malav Kirti (Durum Wheat - HI 8498)',
+        localName: 'मालव कीर्ति (कठिया गेहूँ)',
+        suitabilityScore: 96,
+        season: 'Rabi',
+        expectedYield: '20-24 q/acre',
+        profitability: 'High for Semolina / Pasta industries',
+        waterRequirement: '3 irrigations',
+        fertilizerDosage: '120:60:40 NPK',
+        keyAdvantages: ['Rust immune', 'High gluten and pasta index'],
+      },
+      {
+        name: 'Garlic (Yamuna Safed G-50)',
+        localName: 'लहसुन (G-50)',
+        suitabilityScore: 94,
+        season: 'Rabi',
+        expectedYield: '45-60 q/acre',
+        profitability: 'Extremely High (Malwa Cash Crop)',
+        waterRequirement: 'Drip or frequent light sprinkler',
+        fertilizerDosage: '100 kg N : 50 kg P : 80 kg K + 30 kg Sulphur',
+        keyAdvantages: ['Huge market demand in Indore Mandi', 'Long storage life'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'Ideal agro-climate for high-value garlic, onion, and Durum wheat.',
+      kharif: 'Intercropping of Soybean + Pigeon Pea (Arhar 4:2 ratio) for risk hedging.',
+      zaid: 'Summer Moong or vegetables under drip.',
+    },
+    soilHealthTips: [
+      'Balance high potassium with targeted zinc and boron micronutrients for bulb crops.',
+    ],
+  },
+
+  // ─── JHARKHAND: Red Sandy Soil & Acidic Loam (Chota Nagpur Plateau) ────────
+  {
+    district: 'Ranchi',
+    state: 'Jharkhand',
+    soilType: 'Red Sandy Soil',
+    ph: { min: 5.2, max: 6.5, avg: 5.8, classification: 'Moderately Acidic' },
+    nitrogen: { min: 140, max: 220, avg: 175, unit: 'kg/ha', status: 'Low to Medium' },
+    phosphorus: { min: 8, max: 22, avg: 14, unit: 'kg/ha', status: 'Low' },
+    potassium: { min: 120, max: 220, avg: 165, unit: 'kg/ha', status: 'Medium' },
+    organicCarbon: { value: 0.48, unit: '%', status: 'Low' },
+    moisturePercent: { avg: 28, status: 'Fast Draining' },
+    recommendedCrops: [
+      {
+        name: 'HQPM-1 Quality Protein Maize',
+        localName: 'संकर मक्का (HQPM-1)',
+        suitabilityScore: 95,
+        season: 'Rabi',
+        expectedYield: '26-32 q/acre',
+        profitability: 'High (Rising poultry & food processing demand)',
+        waterRequirement: '3-4 irrigations',
+        fertilizerDosage: '120 kg N : 60 kg P : 50 kg K + Lime/ha',
+        keyAdvantages: ['High lysine and tryptophan', 'Thrives in Ranchi sunshine and well-drained red soil'],
+      },
+      {
+        name: 'Toria / Yellow Sarson (B-9)',
+        localName: 'पीली तोरिया / सरसों',
+        suitabilityScore: 93,
+        season: 'Rabi',
+        expectedYield: '6-8 q/acre',
+        profitability: 'High (Short 80-85 days crop)',
+        waterRequirement: '2 light irrigations',
+        fertilizerDosage: '60:30:30 NPK + 15 kg Sulphur',
+        keyAdvantages: ['Fits directly after upland paddy', 'Matures before frost'],
+      },
+      {
+        name: 'Table Potato (Kufri Jyoti)',
+        localName: 'पहाड़ी आलू (कुफरी ज्योति)',
+        suitabilityScore: 92,
+        season: 'Rabi',
+        expectedYield: '85-110 q/acre',
+        profitability: 'High cash crop',
+        waterRequirement: '4-5 light irrigations',
+        fertilizerDosage: '120 kg N : 80 kg P : 100 kg K/ha',
+        keyAdvantages: ['Late blight resistant', 'High dry matter content'],
+      },
+      {
+        name: 'Tomato (Swarna Sampatti / Lalit)',
+        localName: 'टमाटर (हाइब्रिड)',
+        suitabilityScore: 94,
+        season: 'Rabi',
+        expectedYield: '140-180 q/acre',
+        profitability: 'Very High vegetable export to Bengal & Odisha',
+        waterRequirement: 'Drip or alternate furrow irrigation',
+        fertilizerDosage: '100 kg N : 60 kg P : 80 kg K/ha',
+        keyAdvantages: ['Bacterial wilt resistant bred by ICAR-RCER Ranchi'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'Apply agricultural lime (Choona) @ 250-400 kg/ha once every 3 years to neutralize soil acidity and unlock fixed phosphorus.',
+      kharif: 'Direct seeded upland rice (Sahbhagi Dhan) or finger millet (Ragi) for drought resilience.',
+      zaid: 'Off-season vegetable cultivation utilizing check-dams and solar micro-irrigation.',
+    },
+    soilHealthTips: [
+      'Red soils are naturally low in organic carbon and water-holding capacity.',
+      'Incorporate vermicompost and biochar to retain soil moisture in root zones.',
+      'Use rock phosphate combined with PSB instead of pure DAP in acidic soils.',
+    ],
+  },
+  {
+    district: 'Hazaribagh',
+    state: 'Jharkhand',
+    soilType: 'Red Sandy Soil',
+    ph: { min: 5.4, max: 6.6, avg: 6.0, classification: 'Slightly Acidic' },
+    nitrogen: { min: 145, max: 225, avg: 180, unit: 'kg/ha', status: 'Low' },
+    phosphorus: { min: 9, max: 24, avg: 15, unit: 'kg/ha', status: 'Low' },
+    potassium: { min: 130, max: 230, avg: 175, unit: 'kg/ha', status: 'Medium' },
+    organicCarbon: { value: 0.50, unit: '%', status: 'Low' },
+    moisturePercent: { avg: 30, status: 'Fast Draining' },
+    recommendedCrops: [
+      {
+        name: 'French Beans (Swarna Priya)',
+        localName: 'फ्रेंच बीन',
+        suitabilityScore: 94,
+        season: 'Rabi',
+        expectedYield: '40-50 q/acre',
+        profitability: 'High vegetable returns',
+        waterRequirement: '3-4 light irrigations',
+        fertilizerDosage: '50:80:60 NPK',
+        keyAdvantages: ['Quick 70-day harvest', 'Fixes nitrogen in red plateau soils'],
+      },
+      {
+        name: 'Mustard (Pusa Agrani)',
+        localName: 'सरसों',
+        suitabilityScore: 91,
+        season: 'Rabi',
+        expectedYield: '7-9 q/acre',
+        profitability: 'High',
+        waterRequirement: '2 irrigations',
+        fertilizerDosage: '60:30:30 NPK',
+        keyAdvantages: ['Early maturity', 'Tolerant to mild acid soils'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'Utilize water from Dobhas (farm ponds) with portable drip or sprinkler lines to prevent rapid drainage losses.',
+      kharif: 'Ragi (Finger Millet) and Upland Paddy.',
+      zaid: 'Watermelon and Bitter Gourd on riverbed silt patches.',
+    },
+    soilHealthTips: [
+      'Construct bunds across slope contours to halt topsoil sheet erosion during monsoon rains.',
+    ],
+  },
+
+  // ─── RAJASTHAN: Sandy Loam & Desert Soils ──────────────────────────────────
+  {
+    district: 'Jaipur',
+    state: 'Rajasthan',
+    soilType: 'Sandy Loam',
+    ph: { min: 7.5, max: 8.5, avg: 8.0, classification: 'Alkaline' },
+    nitrogen: { min: 130, max: 210, avg: 165, unit: 'kg/ha', status: 'Low' },
+    phosphorus: { min: 12, max: 28, avg: 20, unit: 'kg/ha', status: 'Low' },
+    potassium: { min: 190, max: 320, avg: 250, unit: 'kg/ha', status: 'High' },
+    organicCarbon: { value: 0.35, unit: '%', status: 'Low' },
+    moisturePercent: { avg: 22, status: 'Low Retention' },
+    recommendedCrops: [
+      {
+        name: 'Barley (RD-2035 / RD-2715)',
+        localName: 'जौ (Barley)',
+        suitabilityScore: 96,
+        season: 'Rabi',
+        expectedYield: '18-22 q/acre',
+        profitability: 'High for brewing & feed industries',
+        waterRequirement: '2-3 light irrigations (Salt tolerant)',
+        fertilizerDosage: '60:30:20 NPK',
+        keyAdvantages: ['Highly salinity tolerant', 'Low water requirement'],
+      },
+      {
+        name: 'Mustard (Giriraj / RH-749)',
+        localName: 'सरसों (गिरिराज)',
+        suitabilityScore: 95,
+        season: 'Rabi',
+        expectedYield: '9-12 q/acre',
+        profitability: 'Very High in Rajasthan mandis',
+        waterRequirement: '2 irrigations',
+        fertilizerDosage: '80:40:40 NPK',
+        keyAdvantages: ['High frost tolerance', 'Dense pod bearing'],
+      },
+      {
+        name: 'Chickpea (GNG-1581 Gangaur)',
+        localName: 'चना (गणगौर)',
+        suitabilityScore: 93,
+        season: 'Rabi',
+        expectedYield: '8-11 q/acre',
+        profitability: 'High',
+        waterRequirement: '1-2 irrigations',
+        fertilizerDosage: '20:40:20 NPK',
+        keyAdvantages: ['Tolerates light sandy loam', 'High pod filling'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'Use drip irrigation or sprinkler sets under PMKSY to save 60% water in permeable sandy soil.',
+      kharif: 'Pearl Millet (Bajra) or Cluster Bean (Guar) for drought resilience.',
+      zaid: 'Crop resting or soil solarization to destroy nematodes.',
+    },
+    soilHealthTips: [
+      'Very low organic carbon; incorporate cow dung manure and bio-slurry to build soil structure.',
+      'Keep soil covered with organic mulching to avoid scorching root zone heat.',
+    ],
+  },
+
+  // ─── BIHAR: Alluvial & Clayey (Gangetic Plain) ─────────────────────────────
+  {
+    district: 'Patna',
+    state: 'Bihar',
+    soilType: 'Alluvial',
+    ph: { min: 6.8, max: 7.6, avg: 7.2, classification: 'Neutral' },
+    nitrogen: { min: 195, max: 285, avg: 240, unit: 'kg/ha', status: 'Medium' },
+    phosphorus: { min: 16, max: 35, avg: 25, unit: 'kg/ha', status: 'Medium' },
+    potassium: { min: 210, max: 360, avg: 280, unit: 'kg/ha', status: 'High' },
+    organicCarbon: { value: 0.68, unit: '%', status: 'Medium' },
+    moisturePercent: { avg: 45, status: 'Good' },
+    recommendedCrops: [
+      {
+        name: 'Rabi Maize (DKC-9081 / Pioneer)',
+        localName: 'संकर रabi मक्का',
+        suitabilityScore: 97,
+        season: 'Rabi',
+        expectedYield: '35-45 q/acre',
+        profitability: 'Highest revenue crop in Bihar plains',
+        waterRequirement: '4-5 irrigations',
+        fertilizerDosage: '150:75:60 NPK',
+        keyAdvantages: ['Enormous grain yield', 'High market liquidity in Gulabbagh & Mokama'],
+      },
+      {
+        name: 'Wheat (HD-2967)',
+        localName: 'गेहूँ',
+        suitabilityScore: 94,
+        season: 'Rabi',
+        expectedYield: '20-23 q/acre',
+        profitability: 'High',
+        waterRequirement: '4 irrigations',
+        fertilizerDosage: '120:60:40 NPK',
+        keyAdvantages: ['Rust resistant', 'Staple grain'],
+      },
+      {
+        name: 'Lentil (Masoor - HUL-57)',
+        localName: 'मसूर दाल',
+        suitabilityScore: 95,
+        season: 'Rabi',
+        expectedYield: '8-10 q/acre',
+        profitability: 'High (Tal area special)',
+        waterRequirement: 'Relies on receding flood residual moisture',
+        fertilizerDosage: '20:40:20 NPK',
+        keyAdvantages: ['Famous Mokama Tal pulse', 'Zero extra irrigation needed in clay silts'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'In Mokama/Barh Tal areas, broadcast Lentils and Gram directly into wet mud as flood waters recede (Paira cropping).',
+      kharif: 'Swarna Sub-1 (flood tolerant paddy) in lowlands.',
+      zaid: 'Garlic or Spring Sunflower.',
+    },
+    soilHealthTips: [
+      'Gangetic alluvium is naturally fertile; maintain balanced NPK with special attention to boron.',
+    ],
+  },
+
+  // ─── PUNJAB: Alluvial & Loamy (Green Revolution Heart) ──────────────────────
+  {
+    district: 'Ludhiana',
+    state: 'Punjab',
+    soilType: 'Alluvial',
+    ph: { min: 7.2, max: 8.2, avg: 7.6, classification: 'Mildly Alkaline' },
+    nitrogen: { min: 160, max: 240, avg: 195, unit: 'kg/ha', status: 'Medium' },
+    phosphorus: { min: 25, max: 55, avg: 38, unit: 'kg/ha', status: 'High' },
+    potassium: { min: 200, max: 350, avg: 270, unit: 'kg/ha', status: 'High' },
+    organicCarbon: { value: 0.50, unit: '%', status: 'Low to Medium' },
+    moisturePercent: { avg: 40, status: 'Adequate' },
+    recommendedCrops: [
+      {
+        name: 'PBW-824 / DBW-303 Wheat',
+        localName: 'गेहूँ (PBW-824)',
+        suitabilityScore: 98,
+        season: 'Rabi',
+        expectedYield: '24-28 q/acre',
+        profitability: 'Very High with Government Mandi MSP guarantee',
+        waterRequirement: '4-5 irrigations',
+        fertilizerDosage: '125:60:30 NPK',
+        keyAdvantages: ['Record breaking yield', 'Bred for Northern Fertile Plains'],
+      },
+      {
+        name: 'Raya / Gobhi Sarson (GSC-7)',
+        localName: 'गोभी सरसों',
+        suitabilityScore: 92,
+        season: 'Rabi',
+        expectedYield: '8-11 q/acre',
+        profitability: 'High',
+        waterRequirement: '3 irrigations',
+        fertilizerDosage: '100:30:30 NPK',
+        keyAdvantages: ['Canola quality oil', 'High returns'],
+      },
+    ],
+    seasonalAdvice: {
+      rabi: 'Use Happy Seeder or Super Seeder to sow wheat directly into paddy straw without burning residue, saving nutrients.',
+      kharif: 'PR-126 short duration paddy to curb groundwater drawdown.',
+      zaid: 'Summer Moong (SML-668) to break monoculture and enrich soil.',
+    },
+    soilHealthTips: [
+      'Stop burning stubble; residue incorporation increases organic carbon and micro-flora.',
+      'Check tubewell water salinity before applying to light soils.',
+    ],
+  },
+];
+
+async function seedSoilData() {
+  console.log('🌍 Starting Soil & Crop Dataset Seeding process...');
+  console.log(`Connecting to: ${MONGODB_URI.replace(/:([^:@]+)@/, ':****@')}`);
+
+  try {
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 15000,
+    });
+    console.log('✅ Connected to MongoDB Atlas');
+
+    // Remove existing soil data to avoid duplicates
+    const deleteResult = await SoilData.deleteMany({});
+    console.log(`🗑️  Cleared existing SoilData collection (${deleteResult.deletedCount} items removed)`);
+
+    // Insert rich Kaggle-calibrated regional soil records
+    const inserted = await SoilData.insertMany(soilDataset);
+    console.log(`✨ Successfully seeded ${inserted.length} district soil and crop recommendation profiles!`);
+
+    console.log('\nSeeded Districts & Soil Types:');
+    inserted.forEach((s, idx) => {
+      console.log(`   ${idx + 1}. ${s.district}, ${s.state} [${s.soilType}] -> ${s.recommendedCrops.map(c => c.name.split(' ')[0]).join(', ')}`);
+    });
+
+    console.log('\n🌱 SoilData collection in MongoDB Atlas is ready for instant geo-queries!');
+    process.exit(0);
+  } catch (err) {
+    console.error('❌ Failed to seed soil database:', err.message);
+    process.exit(1);
+  }
+}
+
+seedSoilData();

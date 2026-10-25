@@ -1,0 +1,151 @@
+[
+  {
+    "_id": "mock-scheme-1",
+    "name": "PM-KISAN (Pradhan Mantri Kisan Samman Nidhi)",
+    "nameHindi": "प्रधानमंत्री किसान सम्मान निधि योजना",
+    "category": "central",
+    "ministry": "Ministry of Agriculture & Farmers Welfare",
+    "launchYear": 2019,
+    "benefitAmount": "₹6,000/year (₹2,000 in 3 installments)",
+    "eligibility": [
+      "All landholding small and marginal farmer families with cultivable land",
+      "Valid Aadhaar-linked active bank account with e-KYC completed",
+      "Updated land revenue records (Khatauni / Bhu-naksha)"
+    ],
+    "documents": [
+      "Aadhaar Card",
+      "Bank Passbook (Aadhaar linked)",
+      "Land Ownership Record",
+      "Mobile Number"
+    ],
+    "applicationUrl": "https://pmkisan.gov.in",
+    "description": "Direct income support of ₹6,000 per year transferred directly to bank accounts in three equal 4-monthly installments.",
+    "descriptionHindi": "सभी पात्र किसान परिवारों को प्रति वर्ष ₹6,000 की प्रत्यक्ष सहायता तीन समान किस्तों में बैंक खाते में।",
+    "targetStates": ["All India"],
+    "tags": ["income-support", "direct-benefit", "small-farmer"]
+  },
+  {
+    "_id": "mock-scheme-2",
+    "name": "PMFBY (Pradhan Mantri Fasal Bima Yojana)",
+    "nameHindi": "प्रधानमंत्री फसल बीमा योजना",
+    "category": "insurance",
+    "ministry": "Ministry of Agriculture & Farmers Welfare",
+    "launchYear": 2016,
+    "benefitAmount": "Full sum insured coverage for unseasonal rain, frost, hail & pests",
+    "eligibility": [
+      "Farmers cultivating notified Rabi/Kharif crops (Wheat, Chana, Mustard, Potato, Paddy)",
+      "Subsidized premium: Only 1.5% for Rabi crops, 2.0% for Kharif crops",
+      "Coverage from pre-sowing till post-harvest (up to 14 days)"
+    ],
+    "documents": [
+      "Aadhaar Card",
+      "Land Sowing Certificate / Patwari Report",
+      "Bank Passbook",
+      "Khasra / Khatauni"
+    ],
+    "applicationUrl": "https://pmfby.gov.in",
+    "description": "Comprehensive financial safety net against unpreventable natural perils, drought, flood, hailstorm, and pests.",
+    "descriptionHindi": "प्राकृतिक आपदाओं, कीटों और बेमौसम बारिश से फसल नुकसान पर न्यूनतम 1.5% प्रीमियम में संपूर्ण बीमा सुरक्षा।",
+    "targetStates": ["All India"],
+    "tags": ["insurance", "crop-protection", "risk-management"]
+  },
+  {
+    "_id": "mock-scheme-3",
+    "name": "PM-KUSUM Solar Pump Scheme",
+    "nameHindi": "प्रधानमंत्री कुसुम सोलर पंप योजना",
+    "category": "subsidy",
+    "ministry": "Ministry of New & Renewable Energy",
+    "launchYear": 2019,
+    "benefitAmount": "Up to 60% total subsidy (30% Central + 30% State) on standalone solar pumps",
+    "eligibility": [
+      "Individual farmers, FPOs, and village water committees with agricultural land",
+      "Farmer pays only 10% upfront; 30% soft loan available through NABARD",
+      "Replaces expensive diesel generator pumping with free solar daylight irrigation"
+    ],
+    "documents": [
+      "Aadhaar Card",
+      "Land Record (Khasra)",
+      "Bank Account",
+      "Electricity No-Dues Certificate"
+    ],
+    "applicationUrl": "https://pmkusum.mnre.gov.in",
+    "description": "Provides standalone DC/AC solar water pumping systems (3 HP to 10 HP) to eliminate diesel pumping costs.",
+    "descriptionHindi": "डीजल पंपों से मुक्ति पाने के लिए 3 से 10 HP सोलर पंप स्थापना पर 60% तक भारी सरकारी सब्सिडी।",
+    "targetStates": ["All India"],
+    "tags": ["solar", "subsidy", "irrigation", "green-energy"]
+  },
+  {
+    "_id": "mock-scheme-4",
+    "name": "KCC (Kisan Credit Card) 4% Interest Facility",
+    "nameHindi": "किसान क्रेडिट कार्ड (4% ब्याज दर)",
+    "category": "loan",
+    "ministry": "Ministry of Finance & RBI",
+    "launchYear": 1998,
+    "benefitAmount": "Working capital crop loan up to ₹3 Lakh at effective 4% interest rate",
+    "eligibility": [
+      "All farmers cultivating land, tenant farmers, and sharecroppers",
+      "Interest subvention of 3% provided on prompt repayment reducing rate to 4%",
+      "Revolving credit limit valid for 5 years with simple annual renewal"
+    ],
+    "documents": [
+      "Aadhaar Card",
+      "Land Records / Khasra Khatauni",
+      "2 Passport Photos",
+      "No-Dues from other banks"
+    ],
+    "applicationUrl": "https://www.nabard.org",
+    "description": "Institutional credit facility for purchasing quality certified seeds, fertilizers, pesticides and diesel without falling into private moneylender debt.",
+    "descriptionHindi": "फसल लागत (बीज, खाद, कीटनाशक) के लिए ₹3 लाख तक का ऋण मात्र 4% रियायती ब्याज पर।",
+    "targetStates": ["All India"],
+    "tags": ["credit", "low-interest", "short-term-loan"]
+  },
+  {
+    "_id": "mock-scheme-5",
+    "name": "Soil Health Card Scheme (Mrida Swasthya Card)",
+    "nameHindi": "मृदा स्वास्थ्य कार्ड योजना",
+    "category": "central",
+    "ministry": "Ministry of Agriculture & Farmers Welfare",
+    "launchYear": 2015,
+    "benefitAmount": "100% Free laboratory testing of 12 vital soil chemical & micronutrient parameters",
+    "eligibility": [
+      "All farmers cultivating crops across all districts in India",
+      "Issued once every 3 years after GPS-coordinated field soil sample collection",
+      "Provides exact dosage guidance for N-P-K, Sulphur, and Micronutrients (Zinc, Iron, Boron)"
+    ],
+    "documents": [
+      "Aadhaar Card",
+      "Khata / Khasra Farm Location Coordinates",
+      "Farmer Mobile Number"
+    ],
+    "applicationUrl": "https://soilhealth.dac.gov.in",
+    "description": "Diagnostic report card on soil fertility status providing customized fertilizer recommendations to restore soil organic carbon.",
+    "descriptionHindi": "खेत की मिट्टी के 12 पोषक तत्वों की मुफ्त सरकारी जांच और संतुलित खाद उपयोग की वैज्ञानिक पर्ची।",
+    "targetStates": ["All India"],
+    "tags": ["soil-health", "npk", "fertilizer-saving"]
+  },
+  {
+    "_id": "mock-scheme-6",
+    "name": "SMAM Farm Machinery Subsidy",
+    "nameHindi": "कृषि यंत्रीकरण उप-मिशन (ट्रैक्टर व कृषि उपकरण सब्सिडी)",
+    "category": "subsidy",
+    "ministry": "Ministry of Agriculture & Farmers Welfare",
+    "launchYear": 2014,
+    "benefitAmount": "40% to 50% subsidy on Tractors, Rotavators, Happy Seeders & Drones",
+    "eligibility": [
+      "Small, marginal, SC/ST, and women farmers receive highest subsidy tier of 50%",
+      "Custom Hiring Centers (CHC) eligible for up to 80% project subsidy",
+      "Farmer must not have availed machinery subsidy on the same machine within the past 5 years"
+    ],
+    "documents": [
+      "Aadhaar Card",
+      "Land Revenue Record (Khatauni)",
+      "Bank Account Passbook with IFSC",
+      "Quotation / Proforma Invoice from authorized farm equipment dealer"
+    ],
+    "applicationUrl": "https://agrimachinery.nic.in",
+    "description": "Promotes farm mechanization for labor-intensive operations. Enables farmers to purchase tractors, happy seeders, and modern spray drones at deeply discounted rates.",
+    "descriptionHindi": "ट्रैक्टर, रोटावेटर, कल्टीवेटर, लेजर लैंड लेवलर व कृषि ड्रोन खरीदने पर 40% से 50% तक सरकारी अनुदान।",
+    "targetStates": ["All India"],
+    "tags": ["machinery", "tractor-subsidy", "mechanization"]
+  }
+]

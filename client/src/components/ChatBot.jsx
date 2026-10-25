@@ -219,11 +219,17 @@ export default function ChatBot({ isOpen, onClose, currentLanguage = 'hinglish',
         timestamp: data.timestamp || new Date().toISOString(),
       }]);
     } catch (err) {
-      const fallbackAdvisory = 'Namaste Kisan Bhai, abhi server se connect hone mein thoda samay lag raha hai. Aap fasal ke bare mein zila KVK ya Krishi Kendra se bhi sampark kar sakte hain.';
+      const fallbackAdvisory = err.response?.data?.response || err.response?.data?.error ||
+        (language === 'hindi'
+          ? 'नमस्ते किसान भाई! 🙏 कृषि मित्र सर्वर अभी वेक-अप हो रहा है या नेटवर्क व्यस्त है। कृपया 10-15 सेकंड बाद पुनः प्रयास करें या नीचे दिए गए त्वरित विषयों में से चुनें।'
+          : language === 'english'
+          ? 'Hello Farmer! 🙏 Krishi Mitra server is waking up or network is busy. Please retry in 10-15 seconds or choose from the quick topics below.'
+          : 'Namaste Kisan Bhai! 🙏 Krishi Mitra server abhi Render free-tier sleep se wake-up ho raha hai. Kripya 10-15 second baad dobara puchein ya neeche diye gaye topics mein se select karein.');
+
       setMessages(prev => [...prev, {
         role: 'bot',
-        content: err.response?.data?.response || fallbackAdvisory,
-        engine: 'Krishi Expert Core',
+        content: fallbackAdvisory,
+        engine: 'Krishi Expert Core (Fallback)',
         timestamp: new Date().toISOString(),
       }]);
     } finally {
