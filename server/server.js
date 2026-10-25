@@ -897,44 +897,48 @@ app.get('/api/schemes/:id', async (req, res) => {
 });
 
 // ─── Gemini AI Advisory Endpoint (POST /api/chat/advisor & /api/ai/advisor) ────
-const handleChatAdvisor = async (req, res) => {
-  const fallbackReply = "Kisan bhai, gehun aur sarson me samay par sichai karein, mitti me 50-60% nami banaye rakhein aur phool aate waqt insecticide spray se bachein. NPK 12:32:16 ka santulit upyog karein.";
-
-  const userQuery = req.body?.query || req.body?.prompt || req.body?.message || "Kheti tips";
-
+app.post('/api/chat/advisor', async (req, res) => {
   try {
+    const userPrompt = req.body.query || req.body.prompt || req.body.message || "Kheti tips";
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'your_gemini_api_key_here') {
-      throw new Error("GEMINI_API_KEY environment variable is not configured");
+
+    if (!apiKey) {
+      return res.json({ reply: "API Key configure nahi hai server par." });
     }
 
-    const { GoogleGenerativeAI } = require('@google/generative-ai');
-    const genAI = googleGenerativeAI || new GoogleGenerativeAI(apiKey);
+    const systemPrompt = `Aap Krishi Mitra AI hain — ek kisan expert. Kisan ke sawaal ka seedha, asardaar aur practical jawab Hinglish/Hindi me dein: ${userPrompt}`;
 
-    const userPrompt = "You are Krishi Mitra AI, an expert agricultural scientist helping Indian farmers. Answer the following farmer question in clear, direct, and actionable Hinglish/Hindi with practical steps, sowing time, dosages, or treatments: " + userQuery;
+    // Direct REST API Call (Bypasses old SDK 404 bugs)
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: systemPrompt }] }]
+        })
+      }
+    );
 
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-    const result = await model.generateContent(userPrompt);
-    const reply = result.response.text();
+    const data = await response.json();
 
+    if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+      const dynamicReply = data.candidates[0].content.parts[0].text;
+      return res.json({ reply: dynamicReply, message: dynamicReply });
+    }
+
+    console.error("Gemini API raw response error:", JSON.stringify(data));
     return res.json({
-      reply,
-      message: reply,
-      response: reply
+      reply: "Kisan bhai, aapka sawaal mil gaya hai. Kripya gehun, sarson ya fasal rog ka vishisht naam likh kar puchein."
     });
+
   } catch (error) {
     console.error("Gemini Error:", error.message);
     return res.status(200).json({
-      reply: fallbackReply,
-      message: fallbackReply,
-      response: fallbackReply
+      reply: "Kisan bhai, abhi network vyast hai. Kripya 1 minute baad punah prayaas karein."
     });
   }
-};
-
-app.post('/api/chat/advisor', handleChatAdvisor);
-app.post('/api/ai/advisor', handleChatAdvisor);
-
+});
 // ─── Crop & Schedule Routes ───────────────────────────────────────────────────
 app.get('/api/crops', async (req, res) => {
   try {
