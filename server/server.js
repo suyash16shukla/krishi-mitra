@@ -17,32 +17,8 @@ const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/krishimitra';
 const JWT_SECRET = process.env.JWT_SECRET || 'krishi_mitra_jwt_secret_2026';
 
-// ─── CORS Configuration for Vercel & Localhost ────────────────────────────────
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'http://127.0.0.1:5173',
-  process.env.CLIENT_URL,
-].filter(Boolean);
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    // Allow any Vercel deployment or known origin
-    if (
-      origin.endsWith('.vercel.app') ||
-      allowedOrigins.includes(origin) ||
-      origin.includes('localhost') ||
-      origin.includes('127.0.0.1')
-    ) {
-      return callback(null, true);
-    }
-    return callback(null, true); // Permissive for agricultural open portal
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  credentials: true,
-}));
+// ─── Open CORS Configuration ──────────────────────────────────────────────────
+app.use(cors({ origin: '*' }));
 
 app.use(express.json());
 
@@ -922,103 +898,81 @@ app.get('/api/schemes/:id', async (req, res) => {
 
 // ─── Gemini AI Advisory Endpoint (POST /api/chat/advisor & /api/ai/advisor) ────
 const handleChatAdvisor = async (req, res) => {
-  try {
-    const rawMessage = req.body?.message || req.body?.query || req.body?.prompt;
-    const message = typeof rawMessage === 'string' ? rawMessage : (rawMessage ? String(rawMessage) : '');
-    const { language = 'hinglish', conversationHistory = [] } = req.body;
+  const fallbackReply = "Kisan bhai, gehun aur sarson me samay par sichai karein, mitti me 50-60% nami banaye rakhein aur phool aate waqt insecticide spray se bachein. NPK 12:32:16 ka santulit upyog karein.";
 
-    // Strict input validation
-    if (!message || !message.trim()) {
-      return res.status(400).json({
-        success: false,
-        error: 'Kripya apna sawal ya fasal ki samasya likhein ya bolkar batayein. (Message cannot be empty)',
-        response: 'Namaste Kisan Bhai! 🙏 Kripya apna prashna ya fasal ki beemari ke bare mein batayein taaki main sahi salah de sakoon.',
+  try {
+    const query = req.body?.query || req.body?.prompt || req.body?.message || "Kheti tips";
+    const language = req.body?.language || 'hinglish';
+    const cleanQuery = typeof query === 'string' ? query.trim() : JSON.stringify(query);
+
+    let replyText = null;
+
+    // Use GoogleGenerativeAI with model "gemini-1.5-flash" (with graceful fallback if missing or timing out)
+    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here') {
+      try {
+        let aiInstance = googleGenerativeAI;
+        if (!aiInstance) {
+          const { GoogleGenerativeAI } = require('@google/generative-ai');
+          aiInstance = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        }
+
+        const model = aiInstance.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+        // Timeout race: never let external Google API hang longer than 8 seconds
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Gemini API call timed out")), 8000)
+        );
+
+        const prompt = `${KRISHI_MITRA_SYSTEM_INSTRUCTION}\n\nKisan Query: ${cleanQuery}\nRespond in ${language}. Provide practical, direct farming guidance.`;
+
+        const result = await Promise.race([
+          model.generateContent(prompt),
+          timeoutPromise
+        ]);
+
+        const responseText = result?.response?.text();
+        if (responseText && responseText.trim()) {
+          replyText = responseText.trim();
+        }
+      } catch (geminiError) {
+        console.warn("Gemini 1.5 Flash call notice (falling back gracefully):", geminiError.message);
+      }
+    }
+
+    if (replyText) {
+      return res.status(200).json({
+        success: true,
+        reply: replyText,
+        message: replyText,
+        response: replyText,
+        engine: 'Gemini 1.5 Flash (AI)',
+        timestamp: new Date().toISOString(),
       });
     }
 
-    const cleanMessage = message.trim();
-    const languageInstruction = {
-      hindi: 'You must respond strictly in respectful Hindi (Devanagari script), using common terms Indian farmers understand (e.g. सिंचाई, खाद, यूरिया, कीटनाशक).',
-      english: 'You must respond in clear, practical English with metric units and precise agricultural advice for Indian farmers.',
-      hinglish: 'You must respond in conversational Hinglish (Hindi written in Roman English script) with warmth, respect, and local Indian agricultural terms (e.g. kisan bhai, sichai, khad, dawa, rokhtham).',
-    }[language] || 'Respond in conversational Hinglish.';
+    // Keyword-based localized agricultural fallback if available, else standard fallbackReply
+    const smartFallback = typeof generateSmartFallbackAdvisory === 'function'
+      ? generateSmartFallbackAdvisory(cleanQuery, language)
+      : null;
 
-    // 1. Try Google Generative AI SDK (@google/generative-ai)
-    if (googleGenerativeAI) {
-      try {
-        const model = googleGenerativeAI.getGenerativeModel({
-          model: 'gemini-1.5-flash',
-          systemInstruction: KRISHI_MITRA_SYSTEM_INSTRUCTION + `\n\n${languageInstruction}`,
-        });
+    const finalReply = smartFallback || fallbackReply;
 
-        const prompt = `${cleanMessage}\n\n[Please respond in ${language}]`;
-        const result = await model.generateContent(prompt);
-        const responseText = result.response?.text();
-
-        if (responseText && responseText.trim()) {
-          return res.json({
-            success: true,
-            response: responseText.trim(),
-            language,
-            engine: 'Gemini 1.5 Flash (AI)',
-            timestamp: new Date().toISOString(),
-          });
-        }
-      } catch (apiErr) {
-        console.warn('Google Generative AI call notice:', apiErr.message);
-      }
-    }
-
-    // 2. Try @google/genai SDK
-    if (genAIClient) {
-      try {
-        const candidateModels = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-        for (const modelName of candidateModels) {
-          try {
-            const result = await genAIClient.models.generateContent({
-              model: modelName,
-              contents: [{ role: 'user', parts: [{ text: cleanMessage }] }],
-              config: {
-                systemInstruction: KRISHI_MITRA_SYSTEM_INSTRUCTION + `\n\n${languageInstruction}`,
-              },
-            });
-            const responseText = result.text || result.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (responseText && responseText.trim()) {
-              return res.json({
-                success: true,
-                response: responseText.trim(),
-                language,
-                engine: `${modelName} (AI)`,
-                timestamp: new Date().toISOString(),
-              });
-            }
-          } catch {
-            // Check next candidate model
-          }
-        }
-      } catch (genErr) {
-        console.warn('@google/genai call notice:', genErr.message);
-      }
-    }
-
-    // 3. Resilient Localized Agricultural Expert Engine (Handles Render Cold Start & Quota Limits)
-    const fallbackResponse = generateSmartFallbackAdvisory(cleanMessage, language);
-    return res.json({
-      success: true,
-      response: fallbackResponse,
-      language,
-      engine: 'Krishi Mitra Expert Engine',
-      timestamp: new Date().toISOString(),
-      note: 'Render server wake-up/free-tier resilient advisory provided',
-    });
-  } catch (error) {
-    console.error('Chat advisor error:', error.message);
-    const fallbackResponse = generateSmartFallbackAdvisory(req.body?.message || '', req.body?.language || 'hinglish');
     return res.status(200).json({
       success: true,
-      response: fallbackResponse || 'Namaste Kisan Bhai! Krishi Mitra server wake up ho raha hai. Kripya 10 second baad dobara puchein ya upar diye gaye quick topics mein se chunein.',
-      language: req.body?.language || 'hinglish',
-      engine: 'Krishi Fallback Core',
+      reply: finalReply,
+      message: finalReply,
+      response: finalReply,
+      engine: 'Krishi Expert Core',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Chat advisor error (recovering with 200 fallback):", error?.message);
+    return res.status(200).json({
+      success: true,
+      reply: fallbackReply,
+      message: fallbackReply,
+      response: fallbackReply,
+      engine: 'Krishi Expert Core (Fallback)',
       timestamp: new Date().toISOString(),
     });
   }

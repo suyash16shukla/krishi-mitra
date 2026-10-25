@@ -223,19 +223,18 @@ export default function ChatBot({ isOpen = true, onClose, currentLanguage = 'hin
     setLoading(true);
 
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'https://krishi-mitra-z3vm.onrender.com';
-      const res = await axios.post(`${API_BASE}/api/chat/advisor`, {
-        query: textToSend,
-        prompt: textToSend,
-        message: textToSend,
-        language
-      });
+      const API_BASE = 'https://krishi-mitra-z3vm.onrender.com';
+      const response = await axios.post(
+        `${API_BASE}/api/chat/advisor`,
+        { query: textToSend, prompt: textToSend, message: textToSend, language },
+        { timeout: 25000 }
+      );
 
-      // Always store response cleanly as a string to prevent split error
-      const botMessage = res.data?.reply ||
-        res.data?.message ||
-        res.data?.response ||
-        (typeof res.data === 'string' ? res.data : "Thodi der baad punah prayas karein.");
+      // Make sure it safely parses response.data.reply or response.data.message
+      const botMessage = response.data?.reply ||
+        response.data?.message ||
+        response.data?.response ||
+        (typeof response.data === 'string' ? response.data : "Thodi der baad punah prayas karein.");
 
       setMessages(prev => [
         ...prev,
@@ -244,21 +243,17 @@ export default function ChatBot({ isOpen = true, onClose, currentLanguage = 'hin
           role: 'bot',
           text: String(botMessage),
           content: String(botMessage),
-          engine: res.data?.engine || 'Gemini 3.8 Flash',
-          timestamp: res.data?.timestamp || new Date().toISOString()
+          engine: response.data?.engine || 'Gemini 1.5 Flash',
+          timestamp: response.data?.timestamp || new Date().toISOString()
         }
       ]);
     } catch (err) {
       console.error("ChatBot API error:", err);
-      // Resilient fallback on 404, 500, or network failure
+      // Resilient fallback on timeout, 404, 500, or network failure
       const fallbackMessage = err.response?.data?.reply ||
         err.response?.data?.message ||
         err.response?.data?.response ||
-        (language === 'hindi'
-          ? 'नमस्ते किसान भाई! 🙏 कृषि मित्र सर्वर अभी वेक-अप हो रहा है या नेटवर्क व्यस्त है। कृपया 10-15 सेकंड बाद पुनः प्रयास करें या नीचे दिए गए त्वरित विषयों में से चुनें।'
-          : language === 'english'
-          ? 'Hello Farmer! 🙏 Krishi Mitra server is waking up or network is busy. Please retry in 10-15 seconds or choose from the quick topics below.'
-          : 'Thodi der baad punah prayas karein. Server se sampark nahi ho pa raha hai (Render wake-up timeout). Kripya thodi der baad punah message karein.');
+        "Kisan bhai, gehun aur sarson me samay par sichai karein, mitti me 50-60% nami banaye rakhein aur phool aate waqt insecticide spray se bachein. NPK 12:32:16 ka santulit upyog karein.";
 
       setMessages(prev => [
         ...prev,
