@@ -923,10 +923,12 @@ app.get('/api/schemes/:id', async (req, res) => {
 // ─── Gemini AI Advisory Endpoint (POST /api/chat/advisor & /api/ai/advisor) ────
 const handleChatAdvisor = async (req, res) => {
   try {
-    const { message, language = 'hinglish', conversationHistory = [] } = req.body;
+    const rawMessage = req.body?.message || req.body?.query || req.body?.prompt;
+    const message = typeof rawMessage === 'string' ? rawMessage : (rawMessage ? String(rawMessage) : '');
+    const { language = 'hinglish', conversationHistory = [] } = req.body;
 
     // Strict input validation
-    if (!message || typeof message !== 'string' || !message.trim()) {
+    if (!message || !message.trim()) {
       return res.status(400).json({
         success: false,
         error: 'Kripya apna sawal ya fasal ki samasya likhein ya bolkar batayein. (Message cannot be empty)',
