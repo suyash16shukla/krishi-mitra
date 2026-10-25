@@ -900,80 +900,34 @@ app.get('/api/schemes/:id', async (req, res) => {
 const handleChatAdvisor = async (req, res) => {
   const fallbackReply = "Kisan bhai, gehun aur sarson me samay par sichai karein, mitti me 50-60% nami banaye rakhein aur phool aate waqt insecticide spray se bachein. NPK 12:32:16 ka santulit upyog karein.";
 
+  const userQuery = req.body?.query || req.body?.prompt || req.body?.message || "Kheti tips";
+
   try {
-    const query = req.body?.query || req.body?.prompt || req.body?.message || "Kheti tips";
-    const language = req.body?.language || 'hinglish';
-    const cleanQuery = typeof query === 'string' ? query.trim() : JSON.stringify(query);
-
-    let replyText = null;
-
-    // Use GoogleGenerativeAI with model "gemini-1.5-flash" (with graceful fallback if missing or timing out)
-    if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here') {
-      try {
-        let aiInstance = googleGenerativeAI;
-        if (!aiInstance) {
-          const { GoogleGenerativeAI } = require('@google/generative-ai');
-          aiInstance = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-        }
-
-        const model = aiInstance.getGenerativeModel({ model: "gemini-1.5-flash" });
-
-        // Timeout race: never let external Google API hang longer than 8 seconds
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Gemini API call timed out")), 8000)
-        );
-
-        const prompt = `${KRISHI_MITRA_SYSTEM_INSTRUCTION}\n\nKisan Query: ${cleanQuery}\nRespond in ${language}. Provide practical, direct farming guidance.`;
-
-        const result = await Promise.race([
-          model.generateContent(prompt),
-          timeoutPromise
-        ]);
-
-        const responseText = result?.response?.text();
-        if (responseText && responseText.trim()) {
-          replyText = responseText.trim();
-        }
-      } catch (geminiError) {
-        console.warn("Gemini 1.5 Flash call notice (falling back gracefully):", geminiError.message);
-      }
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey || apiKey === 'your_gemini_api_key_here') {
+      throw new Error("GEMINI_API_KEY environment variable is not configured");
     }
 
-    if (replyText) {
-      return res.status(200).json({
-        success: true,
-        reply: replyText,
-        message: replyText,
-        response: replyText,
-        engine: 'Gemini 1.5 Flash (AI)',
-        timestamp: new Date().toISOString(),
-      });
-    }
+    const { GoogleGenerativeAI } = require('@google/generative-ai');
+    const genAI = googleGenerativeAI || new GoogleGenerativeAI(apiKey);
 
-    // Keyword-based localized agricultural fallback if available, else standard fallbackReply
-    const smartFallback = typeof generateSmartFallbackAdvisory === 'function'
-      ? generateSmartFallbackAdvisory(cleanQuery, language)
-      : null;
+    const userPrompt = "You are Krishi Mitra AI, an expert agricultural scientist helping Indian farmers. Answer the following farmer question in clear, direct, and actionable Hinglish/Hindi with practical steps, sowing time, dosages, or treatments: " + userQuery;
 
-    const finalReply = smartFallback || fallbackReply;
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(userPrompt);
+    const reply = result.response.text();
 
-    return res.status(200).json({
-      success: true,
-      reply: finalReply,
-      message: finalReply,
-      response: finalReply,
-      engine: 'Krishi Expert Core',
-      timestamp: new Date().toISOString(),
+    return res.json({
+      reply,
+      message: reply,
+      response: reply
     });
   } catch (error) {
-    console.error("Chat advisor error (recovering with 200 fallback):", error?.message);
+    console.error("Gemini Error:", error.message);
     return res.status(200).json({
-      success: true,
       reply: fallbackReply,
       message: fallbackReply,
-      response: fallbackReply,
-      engine: 'Krishi Expert Core (Fallback)',
-      timestamp: new Date().toISOString(),
+      response: fallbackReply
     });
   }
 };
