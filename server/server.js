@@ -913,7 +913,7 @@ const handleChatAdvisor = async (req, res) => {
 
     const userPrompt = "You are Krishi Mitra AI, an expert agricultural scientist helping Indian farmers. Answer the following farmer question in clear, direct, and actionable Hinglish/Hindi with practical steps, sowing time, dosages, or treatments: " + userQuery;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     const result = await model.generateContent(userPrompt);
     const reply = result.response.text();
 
